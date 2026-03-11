@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humanizer</title>
+<!-- playfair for body text, jetbrains mono for ui labels -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* token system -- change palette here, nowhere else */
+  :root {
+    --bg: #0e0c0a; --surface: #12100c; --surface2: #16120e;
+    --border: #2e2820; --border2: #2a2418; --gold: #c4943a;
+    --text: #e8e0d0; --text-body: #d8d0c0; --text-muted: #9a8e7e;
+    --text-dim: #6a6258; --text-darker: #4a4540; --text-darkest: #3a3530;
+    --red: #c43a3a; --green: #4a9a4a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Playfair Display', Georgia, serif; min-height: 100vh; position: relative; overflow-x: hidden; }
+
+  /* grain overlay -- svg noise, no external image */
+  body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; opacity: 0.6; }
+
+  .gold-line { height: 3px; background: linear-gradient(90deg,#c4943a,#8b5e1e,#c4943a); position: relative; z-index: 1; }
+  .container { max-width: 820px; margin: 0 auto; padding: 52px 28px 80px; position: relative; z-index: 1; }
+
+  /* header */
+  header { margin-bottom: 44px; }
+  .header-row { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 400; letter-spacing: -0.02em; color: #f0e8d8; line-height: 1; }
+  .badge { font-size: 11px; font-family: 'JetBrains Mono',monospace; color: var(--gold); border: 1px solid #c4943a44; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .subtitle { color: var(--text-dim); font-size: 15px; font-style: italic; }
+  .scanning { margin-top: 14px; font-size: 11.5px; color: var(--text-darker); font-family: 'JetBrains Mono',monospace; display: flex; align-items: center; gap: 8px; }
+  .scanning .arrow { color: #c4943a44; }
+  .scanning em { color: var(--text-dim); font-style: italic; }
+
+  /* mode switcher -- offline scan vs ai rewrite */
+  .mode-switcher { display: flex; gap: 0; margin-bottom: 32px; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .mode-btn { flex: 1; padding: 11px 20px; background: transparent; border: none; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .mode-btn + .mode-btn { border-left: 1px solid var(--border); }
+  .mode-btn:hover { color: var(--text-muted); background: #ffffff06; }
+  .mode-btn.active { background: #c4943a12; color: var(--gold); }
+  .mode-btn .micon { font-size: 13px; }
+
+  .section-block { margin-bottom: 24px; }
+  .block-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 10px; }
+
+  /* provider pills */
+  .provider-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .pill { padding: 7px 16px; background: transparent; border: 1px solid var(--border); border-radius: 2px; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 7px; }
+  .pill:hover { border-color: var(--text-dim); color: var(--text-muted); }
+  .pill.active { border-color: var(--gold); color: var(--gold); background: #c4943a0d; }
+  .pill .pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; flex-shrink: 0; }
+
+  /* api key row */
+  .key-row { display: flex; gap: 10px; }
+  .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-body); font-size: 12px; padding: 10px 14px; outline: none; font-family: 'JetBrains Mono',monospace; transition: border-color 0.2s; letter-spacing: 0.04em; }
+  .key-input:focus { border-color: #3e3428; }
+  .key-input::placeholder { color: var(--text-darkest); }
+  .key-save { padding: 10px 16px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-size: 10px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .key-save:hover { border-color: var(--gold); color: var(--gold); }
+  .key-hint { font-size: 10.5px; color: var(--text-darkest); font-family: 'JetBrains Mono',monospace; margin-top: 7px; }
+  .key-hint a { color: var(--text-dim); text-decoration: underline; }
+
+  /* status bar -- dot pulses while api call is live */
+  .status-bar { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 3px; border: 1px solid var(--border2); background: var(--surface); margin-bottom: 28px; font-family: 'JetBrains Mono',monospace; font-size: 11px; transition: border-color 0.3s; }
+  .status-bar.calling { border-color: #c4943a44; }
+  .status-bar.done { border-color: #2a4a2a; }
+  .status-bar.error { border-color: #5a2010; }
+  .sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-darkest); flex-shrink: 0; transition: background 0.3s; }
+  .sdot.idle { background: var(--text-darkest); }
+  .sdot.calling { background: var(--gold); animation: pulse 1s ease-in-out infinite; }
+  .sdot.done { background: var(--green); }
+  .sdot.error { background: var(--red); }
+  .sdot.offline { background: #5a8a5a; }
+  .stext { color: var(--text-dim); }
+  .sprovider { color: var(--text-darker); margin-left: auto; font-size: 10px; }
+
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .lbl { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; }
+  .word-count { font-size: 11px; color: var(--text-darker); font-family: 'JetBrains Mono',monospace; }
+
+  /* playfair in the textarea -- feels editorial */
+  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-body); font-size: 15px; line-height: 1.72; padding: 18px 20px; resize: vertical; outline: none; font-family: 'Playfair Display',serif; transition: border-color 0.2s; caret-color: var(--gold); min-height: 200px; }
+  textarea:focus { border-color: #3e3428; }
+  textarea::placeholder { color: var(--text-darkest); }
+
+  button.primary { display: block; width: 100%; padding: 15px 28px; background: var(--gold); color: var(--bg); border: none; border-radius: 3px; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'JetBrains Mono',monospace; cursor: pointer; transition: all 0.18s; margin: 20px 0 32px; }
+  button.primary:disabled { background: #1e1a16; color: var(--text-darkest); cursor: not-allowed; }
+  button.primary:not(:disabled):hover { background: #d4a44a; }
+  button.primary.offline-btn:not(:disabled) { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+  button.primary.offline-btn:not(:disabled):hover { background: #c4943a12; }
+
+  .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid #3a3530; border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 10px; vertical-align: middle; }
+  .error-box { background: #1e1008; border: 1px solid #5a2010; border-radius: 4px; padding: 14px 18px; color: #d04020; font-size: 13px; margin-bottom: 28px; font-family: 'JetBrains Mono',monospace; display: none; }
+
+  /* --- OFFLINE SCAN RESULTS --- */
+  .scan-results { display: none; animation: fadeUp 0.4s ease; }
+
+  /* score bar at the top */
+  .score-bar { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+  .score-num { font-size: 2.8rem; font-family: 'JetBrains Mono',monospace; font-weight: 600; line-height: 1; }
+  .score-num.clean { color: var(--green); }
+  .score-num.mid { color: var(--gold); }
+  .score-num.cringe { color: var(--red); }
+  .score-info { flex: 1; }
+  .score-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 5px; }
+  .score-verdict { font-size: 14px; color: var(--text-muted); font-style: italic; }
+  .score-track { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .score-fill.clean { background: var(--green); }
+  .score-fill.mid { background: var(--gold); }
+  .score-fill.cringe { background: var(--red); }
+
+  /* highlighted preview of the text with bad patterns marked */
+  .highlight-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 22px; margin-bottom: 20px; font-size: 15px; line-height: 1.78; color: var(--text-body); font-family: 'Playfair Display',serif; white-space: pre-wrap; word-break: break-word; }
+  .highlight-box .hl { background: #c43a3a22; border-bottom: 1.5px solid var(--red); border-radius: 2px; color: #e88; cursor: default; position: relative; }
+  .highlight-box .hl-swap { background: #c4943a1a; border-bottom: 1.5px solid var(--gold); border-radius: 2px; color: #d4a44a; cursor: default; }
+  .hl-legend { display: flex; gap: 18px; margin-bottom: 12px; font-size: 11px; font-family: 'JetBrains Mono',monospace; color: var(--text-dim); }
+  .hl-legend span { display: flex; align-items: center; gap: 6px; }
+  .hl-legend .dot-red { width: 8px; height: 8px; background: #c43a3a44; border: 1.5px solid var(--red); border-radius: 1px; }
+  .hl-legend .dot-gold { width: 8px; height: 8px; background: #c4943a1a; border: 1.5px solid var(--gold); border-radius: 1px; }
+
+  /* auto-fixed version */
+  .fixed-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 22px; margin-bottom: 12px; font-size: 15px; line-height: 1.78; color: var(--text-body); font-family: 'Playfair Display',serif; white-space: pre-wrap; word-break: break-word; min-height: 80px; }
+
+  /* caught patterns list */
+  .caught-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 20px; margin-bottom: 20px; }
+  .caught-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .caught-list li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--text-muted); font-family: 'JetBrains Mono',monospace; }
+  .caught-list li .ctag { color: var(--red); font-size: 11px; flex-shrink: 0; }
+  .caught-list li .cword { color: #e88; }
+  .caught-list li .carrow { color: var(--text-darkest); }
+  .caught-list li .cfix { color: var(--gold); }
+  .caught-list li .ccat { color: var(--text-darkest); font-size: 10px; margin-left: auto; }
+
+  /* --- AI RESULTS (same as before) --- */
+  .ai-results { display: none; animation: fadeUp 0.4s ease; }
+  .tells-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 20px; margin-bottom: 24px; }
+  .slabel { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 12px; }
+  .tells-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .tells-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--text-muted); }
+  .tells-list li .tdot { color: var(--gold); font-family: 'JetBrains Mono',monospace; flex-shrink: 0; margin-top: 1px; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; margin-bottom: -1px; transition: color 0.15s; }
+  .tab.active { border-bottom-color: var(--gold); color: var(--gold); }
+  .output-box { background: var(--surface); border: 1px solid var(--border); border-top: none; border-radius: 0 0 4px 4px; padding: 24px 22px; font-size: 15.5px; line-height: 1.78; color: var(--text-body); font-family: 'Playfair Display',serif; white-space: pre-wrap; min-height: 140px; }
+  button.copy { margin-top: 12px; padding: 9px 18px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+  button.copy:hover { color: var(--gold); border-color: var(--gold); }
+  button.copy.copied { color: var(--gold); }
+  .changes-section { margin-top: 32px; }
+  .changes-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .changes-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; color: var(--text-dim); }
+  .changes-list li .num { color: var(--border); font-family: 'JetBrains Mono',monospace; flex-shrink: 0; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="gold-line"></div>
+<div class="container">
+
+  <header>
+    <div class="header-row">
+      <h1>Humanizer</h1>
+      <span class="badge">v1.0</span>
+    </div>
+    <p class="subtitle">Strip the AI out. Put the human back in.</p>
+    <div class="scanning">
+      <span class="arrow">›</span>
+      currently scanning for: <em id="random-tell"></em>
+    </div>
+  </header>
+
+  <!-- two modes: offline scan (no api needed) and ai rewrite -->
+  <div class="mode-switcher">
+    <button class="mode-btn active" id="mode-offline" data-mode="offline">
+      <span class="micon">⚡</span> Offline Scan
+    </button>
+    <button class="mode-btn" id="mode-ai" data-mode="ai">
+      <span class="micon">✦</span> AI Rewrite
+    </button>
+  </div>
+
+  <!-- ai provider config -- hidden in offline mode -->
+  <div id="ai-config" style="display:none;">
+    <div class="section-block">
+      <div class="block-label">AI Provider</div>
+      <div class="provider-pills">
+        <button class="pill active" data-provider="anthropic"><span class="pdot"></span>Anthropic</button>
+        <button class="pill" data-provider="gemini"><span class="pdot"></span>Gemini</button>
+        <button class="pill" data-provider="groq"><span class="pdot"></span>Groq</button>
+      </div>
+      <!-- key stored in memory per provider, not localStorage -->
+      <div class="key-row">
+        <input class="key-input" id="api-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
+        <button class="key-save" id="save-key-btn">Save</button>
+      </div>
+      <div class="key-hint" id="key-hint">Get your key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+    </div>
+  </div>
+
+  <!-- status bar -- changes per mode and per api state -->
+  <div class="status-bar" id="status-bar">
+    <div class="sdot offline" id="sdot"></div>
+    <span class="stext" id="stext">Offline scan ready — no API needed</span>
+    <span class="sprovider" id="sprovider">rule-based</span>
+  </div>
+
+  <div class="label-row">
+    <span class="lbl">Input text</span>
+    <span class="word-count" id="word-count">0 words</span>
+  </div>
+  <textarea id="input-text" rows="9" placeholder="Paste your AI-sounding text here. The more cringe, the better."></textarea>
+
+  <button class="primary offline-btn" id="main-btn" disabled>Scan for AI patterns →</button>
+  <div class="error-box" id="error-box"></div>
+
+  <!-- OFFLINE RESULTS -->
+  <div class="scan-results" id="scan-results">
+
+    <!-- cringe score -->
+    <div class="score-bar">
+      <div class="score-num" id="score-num">0</div>
+      <div class="score-info">
+        <div class="score-label">AI Cringe Score</div>
+        <div class="score-verdict" id="score-verdict">—</div>
+        <div class="score-track"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- highlighted original text -->
+    <div class="block-label" style="margin-bottom:8px;">Your text — patterns highlighted</div>
+    <div class="hl-legend">
+      <span><span class="dot-red"></span> flag only</span>
+      <span><span class="dot-gold"></span> auto-fixed</span>
+    </div>
+    <div class="highlight-box" id="highlight-box"></div>
+
+    <!-- patterns caught -->
+    <div class="caught-box">
+      <div class="slabel">Patterns caught</div>
+      <ul class="caught-list" id="caught-list"></ul>
+    </div>
+
+    <!-- auto-fixed version (simple swaps only) -->
+    <div class="block-label" style="margin-bottom:8px;">Auto-fixed <span style="color:var(--text-darkest);font-size:10px;font-family:'JetBrains Mono',monospace;"> — simple replacements only, rest needs manual edit</span></div>
+    <div class="fixed-box" id="fixed-box"></div>
+    <button class="copy" id="copy-fixed-btn">Copy fixed text</button>
+
+  </div>
+
+  <!-- AI RESULTS -->
+  <div class="ai-results" id="ai-results">
+    <div class="tells-box">
+      <div class="slabel">Remaining AI tells caught in draft</div>
+      <ul class="tells-list" id="tells-list"></ul>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="final">Final version</button>
+      <button class="tab" data-tab="draft">Draft</button>
+    </div>
+    <div class="output-box" id="output-box"></div>
+    <button class="copy" id="copy-btn">Copy text</button>
+    <div class="changes-section">
+      <div class="slabel">Changes made</div>
+      <ul class="changes-list" id="changes-list"></ul>
+    </div>
+  </div>
+
+</div>
+<script>
+// rotating tells in the header
+const AI_TELLS = [
+  "em dashes lurking", "pivotal moments detected", "vibrant culture spotted",
+  "experts mysteriously agree", "exciting times ahead™", "nestled somewhere breathtaking",
+  "serves as a testament", "evolving landscape alert", "certainly! absolutely!", "it's not just X, it's Y",
+];
+
+// -----------------------------------------------------------------------
+// OFFLINE PATTERN DATABASE
+// each entry: { pattern (string or regex), category, fix (optional replacement) }
+// fix = null means flag only, fix = string means auto-replace
+// -----------------------------------------------------------------------
+const PATTERNS = [
+  // significance inflation
+  { p: /\bstands as\b/gi,           cat: 'significance inflation', fix: 'is' },
+  { p: /\bserves as\b/gi,           cat: 'significance inflation', fix: 'is' },
+  { p: /\bfunctions as\b/gi,        cat: 'significance inflation', fix: 'is' },
+  { p: /\btestament to\b/gi,        cat: 'significance inflation', fix: null },
+  { p: /\bpivotal moment\b/gi,      cat: 'significance inflation', fix: null },
+  { p: /\bpivotal role\b/gi,        cat: 'significance inflation', fix: null },
+  { p: /\bunderscore[sd]?\b/gi,     cat: 'significance inflation', fix: null },
+  { p: /\bevolving landscape\b/gi,  cat: 'significance inflation', fix: null },
+  { p: /\bindelible mark\b/gi,      cat: 'significance inflation', fix: null },
+  { p: /\bkey turning point\b/gi,   cat: 'significance inflation', fix: null },
+  { p: /\bsetting the stage\b/gi,   cat: 'significance inflation', fix: null },
+  { p: /\bdeeply rooted\b/gi,       cat: 'significance inflation', fix: null },
+  { p: /\bmarks a shift\b/gi,       cat: 'significance inflation', fix: null },
+
+  // promotional language
+  { p: /\bboasts\b/gi,              cat: 'promotional',  fix: 'has' },
+  { p: /\bvibrant\b/gi,             cat: 'promotional',  fix: null },
+  { p: /\bnestled\b/gi,             cat: 'promotional',  fix: null },
+  { p: /\bbreathtaking\b/gi,        cat: 'promotional',  fix: null },
+  { p: /\bgroundbreaking\b/gi,      cat: 'promotional',  fix: null },
+  { p: /\brenowned\b/gi,            cat: 'promotional',  fix: 'known' },
+  { p: /\bmust-visit\b/gi,          cat: 'promotional',  fix: null },
+  { p: /\bstunning\b/gi,            cat: 'promotional',  fix: null },
+  { p: /\bin the heart of\b/gi,     cat: 'promotional',  fix: 'in' },
+
+  // chatbot artifacts
+  { p: /\bgreat question[!.]?\b/gi,          cat: 'chatbot artifact', fix: '' },
+  { p: /\bi hope this helps[!.]?\b/gi,       cat: 'chatbot artifact', fix: '' },
+  { p: /\bcertainly[!,]?\b/gi,               cat: 'chatbot artifact', fix: '' },
+  { p: /\babsolutely[!,]?\b/gi,              cat: 'chatbot artifact', fix: '' },
+  { p: /\bof course[!,]?\b/gi,               cat: 'chatbot artifact', fix: '' },
+  { p: /let me know if you('d like| have| need)/gi, cat: 'chatbot artifact', fix: '' },
+  { p: /feel free to (ask|reach out)/gi,     cat: 'chatbot artifact', fix: '' },
+
+  // vague attributions
+  { p: /\bexperts (argue|say|believe|suggest)\b/gi, cat: 'vague attribution', fix: null },
+  { p: /\bindustry observers\b/gi,           cat: 'vague attribution', fix: null },
+  { p: /\bsome critics (argue|say|claim)\b/gi, cat: 'vague attribution', fix: null },
+  { p: /\bstudies show\b/gi,                 cat: 'vague attribution', fix: null },
+  { p: /\bresearch suggests\b/gi,            cat: 'vague attribution', fix: null },
+
+  // filler phrases -- these have clean 1:1 fixes
+  { p: /\bin order to\b/gi,                  cat: 'filler', fix: 'to' },
+  { p: /\bat this point in time\b/gi,        cat: 'filler', fix: 'now' },
+  { p: /\bdue to the fact that\b/gi,         cat: 'filler', fix: 'because' },
+  { p: /\bin the event that\b/gi,            cat: 'filler', fix: 'if' },
+  { p: /\bit is important to note that\b/gi, cat: 'filler', fix: '' },
+  { p: /\bit should be noted that\b/gi,      cat: 'filler', fix: '' },
+  { p: /\bat its core[,]?\b/gi,              cat: 'filler', fix: '' },
+  { p: /\bin conclusion[,]?\b/gi,            cat: 'filler', fix: '' },
+  { p: /\bhas the ability to\b/gi,           cat: 'filler', fix: 'can' },
+  { p: /\bin terms of\b/gi,                  cat: 'filler', fix: 'for' },
+
+  // em dash
+  { p: /\u2014/g,                            cat: 'em dash', fix: ',' },
+  { p: /--/g,                                cat: 'em dash', fix: ',' },
+
+  // generic positive conclusions
+  { p: /the future (looks|seems) bright/gi,  cat: 'generic conclusion', fix: null },
+  { p: /exciting times (lie|are) ahead/gi,   cat: 'generic conclusion', fix: null },
+  { p: /journey (toward|towards) excellence/gi, cat: 'generic conclusion', fix: null },
+
+  // excessive hedging
+  { p: /could potentially\b/gi,              cat: 'excessive hedging', fix: 'could' },
+  { p: /\bit could be argued\b/gi,           cat: 'excessive hedging', fix: null },
+  { p: /\bmight possibly\b/gi,               cat: 'excessive hedging', fix: 'might' },
+
+  // superficial -ing phrases tacked on
+  { p: /,\s*highlighting (the|its|their|how)/gi, cat: 'superficial -ing', fix: null },
+  { p: /,\s*underscoring (the|its|their|how)/gi, cat: 'superficial -ing', fix: null },
+  { p: /,\s*reflecting (the|its|their|how)/gi,   cat: 'superficial -ing', fix: null },
+  { p: /,\s*showcasing (the|its|their|how)/gi,   cat: 'superficial -ing', fix: null },
+  { p: /,\s*contributing to (the|a|an|its)/gi,   cat: 'superficial -ing', fix: null },
+  { p: /,\s*fostering (a|an|the)/gi,              cat: 'superficial -ing', fix: null },
+
+  // negative parallelism
+  { p: /it'?s not just .{3,60}; it'?s/gi,    cat: 'negative parallelism', fix: null },
+];
+
+// per-provider config
+const PROVIDERS = {
+  anthropic: { label: 'anthropic / claude-sonnet-4', hint: '<a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>', placeholder: 'sk-ant-...' },
+  gemini:    { label: 'google / gemini-2.0-flash',   hint: '<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>', placeholder: 'AIza...' },
+  groq:      { label: 'groq / llama-3.3-70b',        hint: '<a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>', placeholder: 'gsk_...' },
+};
+
+const SYSTEM_PROMPT = `You are a writing editor that removes AI-generated patterns and makes text sound human.
+
+REMOVE: "stands as","serves as","testament to","pivotal moment","underscores","evolving landscape","boasts","vibrant","nestled","breathtaking","groundbreaking","renowned","highlighting...","underscoring...","Experts argue","Industry observers","Great question!","I hope this helps!","Certainly!","Absolutely!","It's not just X; it's Y","seamless, intuitive, and powerful",em dashes,"the future looks bright","exciting times lie ahead","could potentially possibly","In order to","At this point in time","It is important to note that"
+
+ADD: personality, opinions, varied sentence rhythm, specific details, first person when it fits, some mess.
+
+RESPOND ONLY with this JSON (no backticks, no preamble):
+{"draft":"first rewrite","aiTells":["tell1","tell2","tell3"],"final":"final polished version","changes":["change1","change2","change3"]}`;
+
+// state
+let currentMode = 'offline';
+let currentProvider = 'anthropic';
+let savedKeys = {};
+let currentResult = null;
+let currentTab = 'final';
+let fixedText = '';
+
+// elements
+const $ = id => document.getElementById(id);
+const randomTellEl = $('random-tell'), inputEl = $('input-text'), wordCountEl = $('word-count');
+const mainBtn = $('main-btn'), errorBox = $('error-box');
+const sdot = $('sdot'), stext = $('stext'), sprovider = $('sprovider'), statusBar = $('status-bar');
+const apiKeyInput = $('api-key'), saveKeyBtn = $('save-key-btn'), keyHint = $('key-hint');
+const aiConfig = $('ai-config');
+const scanResultsEl = $('scan-results'), aiResultsEl = $('ai-results');
+
+randomTellEl.textContent = AI_TELLS[Math.floor(Math.random() * AI_TELLS.length)];
+
+// mode switching
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentMode = btn.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    if (currentMode === 'offline') {
+      aiConfig.style.display = 'none';
+      mainBtn.textContent = 'Scan for AI patterns →';
+      mainBtn.classList.add('offline-btn');
+      setStatus('offline', 'Offline scan ready — no API needed', 'rule-based');
+    } else {
+      aiConfig.style.display = 'block';
+      mainBtn.textContent = 'Humanize →';
+      mainBtn.classList.remove('offline-btn');
+      setStatus('idle', 'Ready', PROVIDERS[currentProvider].label);
+    }
+
+    // hide results when switching modes
+    scanResultsEl.style.display = 'none';
+    aiResultsEl.style.display = 'none';
+    errorBox.style.display = 'none';
+
+    // re-check button state
+    mainBtn.disabled = !inputEl.value.trim();
+  });
+});
+
+function setStatus(state, msg, providerLabel) {
+  sdot.className = 'sdot ' + state;
+  statusBar.className = 'status-bar ' + (state === 'offline' ? '' : state);
+  stext.textContent = msg;
+  if (providerLabel !== undefined) sprovider.textContent = providerLabel;
+}
+
+function selectProvider(p) {
+  currentProvider = p;
+  document.querySelectorAll('.pill').forEach(pill => pill.classList.toggle('active', pill.dataset.provider === p));
+  apiKeyInput.value = savedKeys[p] || '';
+  apiKeyInput.placeholder = PROVIDERS[p].placeholder;
+  keyHint.innerHTML = 'Get your key: ' + PROVIDERS[p].hint;
+  if (currentMode === 'ai') setStatus('idle', 'Ready', PROVIDERS[p].label);
+}
+
+document.querySelectorAll('.pill').forEach(pill => pill.addEventListener('click', () => selectProvider(pill.dataset.provider)));
+
+saveKeyBtn.addEventListener('click', () => {
+  const val = apiKeyInput.value.trim();
+  if (val) {
+    savedKeys[currentProvider] = val;
+    saveKeyBtn.textContent = 'Saved ✓';
+    setTimeout(() => saveKeyBtn.textContent = 'Save', 1500);
+  }
+});
+
+inputEl.addEventListener('input', () => {
+  const words = inputEl.value.trim() ? inputEl.value.trim().split(/\s+/).length : 0;
+  wordCountEl.textContent = words + (words === 1 ? ' word' : ' words');
+  mainBtn.disabled = !inputEl.value.trim();
+});
+
+// tab switching in ai results
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    if (currentResult) $('output-box').textContent = currentTab === 'final' ? currentResult.final : currentResult.draft;
+  });
+});
+
+$('copy-btn').addEventListener('click', () => {
+  const text = currentTab === 'final' ? currentResult.final : currentResult.draft;
+  navigator.clipboard.writeText(text).then(() => {
+    $('copy-btn').textContent = 'Copied ✓'; $('copy-btn').classList.add('copied');
+    setTimeout(() => { $('copy-btn').textContent = 'Copy text'; $('copy-btn').classList.remove('copied'); }, 1800);
+  });
+});
+
+$('copy-fixed-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(fixedText).then(() => {
+    $('copy-fixed-btn').textContent = 'Copied ✓'; $('copy-fixed-btn').classList.add('copied');
+    setTimeout(() => { $('copy-fixed-btn').textContent = 'Copy fixed text'; $('copy-fixed-btn').classList.remove('copied'); }, 1800);
+  });
+});
+
+// -----------------------------------------------------------------------
+// OFFLINE SCAN ENGINE
+// walks through all patterns, collects matches, builds highlighted preview
+// and applies auto-fixes where available
+// -----------------------------------------------------------------------
+function runOfflineScan(text) {
+  const caught = []; // { match, index, length, cat, fix }
+
+  // collect all matches across all patterns
+  PATTERNS.forEach(({ p, cat, fix }) => {
+    const re = new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      caught.push({ match: m[0], index: m.index, length: m[0].length, cat, fix });
+    }
+  });
+
+  // sort by position so we can build the highlighted string in order
+  caught.sort((a, b) => a.index - b.index);
+
+  // remove overlapping matches (keep first one)
+  const filtered = [];
+  let lastEnd = -1;
+  for (const c of caught) {
+    if (c.index >= lastEnd) {
+      filtered.push(c);
+      lastEnd = c.index + c.length;
+    }
+  }
+
+  // build highlighted HTML
+  let html = '';
+  let cursor = 0;
+  for (const c of filtered) {
+    // text before this match
+    html += escHtml(text.slice(cursor, c.index));
+    const cls = c.fix !== null ? 'hl-swap' : 'hl';
+    const title = c.fix !== null ? `auto-fix: "${c.fix || '(remove)'}"` : `flag: ${c.cat}`;
+    html += `<span class="${cls}" title="${title}">${escHtml(c.match)}</span>`;
+    cursor = c.index + c.length;
+  }
+  html += escHtml(text.slice(cursor));
+
+  // build auto-fixed text -- apply fixes in reverse order so indices stay valid
+  let fixed = text;
+  const toFix = filtered.filter(c => c.fix !== null).reverse();
+  for (const c of toFix) {
+    // preserve capitalisation for single-word fixes
+    let replacement = c.fix;
+    if (replacement && c.match[0] === c.match[0].toUpperCase() && c.match[0] !== c.match[0].toLowerCase()) {
+      replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+    }
+    fixed = fixed.slice(0, c.index) + replacement + fixed.slice(c.index + c.length);
+  }
+  // clean up double spaces from empty-string removals
+  fixed = fixed.replace(/  +/g, ' ').replace(/\n +\n/g, '\n\n').trim();
+
+  return { caught: filtered, html, fixed };
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getVerdict(count) {
+  if (count === 0) return { label: 'clean', verdict: 'Looks good. No obvious AI patterns found.', pct: 2 };
+  if (count <= 2) return { label: 'mid', verdict: 'A couple things to fix. Not bad.', pct: 20 };
+  if (count <= 5) return { label: 'mid', verdict: 'Definitely AI-flavoured. Worth cleaning up.', pct: 50 };
+  if (count <= 10) return { label: 'cringe', verdict: 'Heavy AI vibes. Needs work.', pct: 75 };
+  return { label: 'cringe', verdict: 'Maximum cringe. ChatGPT wrote this and didn\'t even try to hide it.', pct: 100 };
+}
+
+// -----------------------------------------------------------------------
+// API CALLERS
+// -----------------------------------------------------------------------
+async function callAnthropic(key, input) {
+  const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+  if (key) headers['x-api-key'] = key;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', headers,
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: 'Humanize:\n\n' + input }] }),
+  });
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.content.map(b => b.text || '').join('');
+}
+
+// gemini puts the key in the url query param (their design choice)
+async function callGemini(key, input) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\nHumanize:\n\n' + input }] }] }),
+  });
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// groq is openai-compatible, just different base url + model
+async function callGroq(key, input) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1000, messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: 'Humanize:\n\n' + input }] }),
+  });
+  const d = await res.json();
+  if (d.error) throw new Error(typeof d.error === 'string' ? d.error : d.error.message);
+  return d.choices?.[0]?.message?.content || '';
+}
+
+// -----------------------------------------------------------------------
+// MAIN BUTTON HANDLER -- routes to offline or ai depending on mode
+// -----------------------------------------------------------------------
+mainBtn.addEventListener('click', async () => {
+  const input = inputEl.value.trim();
+  if (!input) return;
+
+  errorBox.style.display = 'none';
+  scanResultsEl.style.display = 'none';
+  aiResultsEl.style.display = 'none';
+
+  if (currentMode === 'offline') {
+    // --- OFFLINE SCAN ---
+    setStatus('offline', 'Scanning...', 'rule-based');
+    mainBtn.disabled = true;
+
+    // small timeout so the status updates visibly before blocking
+    setTimeout(() => {
+      const { caught, html, fixed } = runOfflineScan(input);
+      fixedText = fixed;
+
+      const { label, verdict, pct } = getVerdict(caught.length);
+
+      // score
+      $('score-num').textContent = caught.length;
+      $('score-num').className = 'score-num ' + label;
+      $('score-verdict').textContent = verdict;
+      $('score-fill').style.width = pct + '%';
+      $('score-fill').className = 'score-fill ' + label;
+
+      // highlighted text
+      $('highlight-box').innerHTML = html || '<span style="color:var(--text-darkest)">nothing flagged</span>';
+
+      // caught list
+      const caughtList = $('caught-list');
+      caughtList.innerHTML = '';
+      if (caught.length === 0) {
+        caughtList.innerHTML = '<li style="color:var(--text-darkest);font-family:\'JetBrains Mono\',monospace;font-size:12px;">no patterns matched</li>';
+      } else {
+        caught.forEach(c => {
+          const li = document.createElement('li');
+          const fixLabel = c.fix === null ? '' : c.fix === '' ? ' <span class="carrow">→</span> <span class="cfix">(remove)</span>' : ` <span class="carrow">→</span> <span class="cfix">"${c.fix}"</span>`;
+          li.innerHTML = `<span class="ctag">✗</span><span class="cword">"${escHtml(c.match)}"</span>${fixLabel}<span class="ccat">${c.cat}</span>`;
+          caughtList.appendChild(li);
+        });
+      }
+
+      // fixed text
+      $('fixed-box').textContent = fixed;
+
+      scanResultsEl.style.display = 'block';
+      setStatus('offline', `Found ${caught.length} pattern${caught.length !== 1 ? 's' : ''}`, 'rule-based');
+      mainBtn.disabled = false;
+    }, 80);
+
+  } else {
+    // --- AI REWRITE ---
+    const key = savedKeys[currentProvider] || apiKeyInput.value.trim();
+    if (!key && currentProvider !== 'anthropic') {
+      errorBox.textContent = `No ${currentProvider} API key. Paste it above and hit Save.`;
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    mainBtn.disabled = true;
+    mainBtn.innerHTML = '<span class="spinner"></span>Humanizing...';
+    setStatus('calling', 'Calling ' + currentProvider + ' API...', PROVIDERS[currentProvider].label);
+
+    try {
+      let rawText = '';
+      if (currentProvider === 'anthropic') rawText = await callAnthropic(key, input);
+      else if (currentProvider === 'gemini') rawText = await callGemini(key, input);
+      else rawText = await callGroq(key, input);
+
+      setStatus('calling', 'Parsing response...', PROVIDERS[currentProvider].label);
+
+      // strip any backtick fences the model snuck in anyway
+      const clean = rawText.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      currentResult = parsed; currentTab = 'final';
+
+      // render tells
+      const tellsList = $('tells-list');
+      tellsList.innerHTML = '';
+      (parsed.aiTells || []).forEach(tell => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="tdot">·</span>${tell}`;
+        tellsList.appendChild(li);
+      });
+
+      // show final by default
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="final"]').classList.add('active');
+      $('output-box').textContent = parsed.final;
+
+      // render changes
+      const changesList = $('changes-list');
+      changesList.innerHTML = '';
+      (parsed.changes || []).forEach((change, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span>${change}`;
+        changesList.appendChild(li);
+      });
+
+      aiResultsEl.style.display = 'block';
+      setStatus('done', 'Done — humanized successfully', PROVIDERS[currentProvider].label);
+
+    } catch (e) {
+      errorBox.textContent = 'Error: ' + (e.message || 'Something went wrong. Check your API key.');
+      errorBox.style.display = 'block';
+      setStatus('error', 'API call failed', PROVIDERS[currentProvider].label);
+    } finally {
+      mainBtn.disabled = false;
+      mainBtn.textContent = 'Humanize →';
+      inputEl.dispatchEvent(new Event('input'));
+    }
+  }
+});
+
+// start in offline mode
+selectProvider('anthropic');
+</script>
+</body>
+</html>
