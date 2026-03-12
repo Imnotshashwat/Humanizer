@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Humanizer</title>
-<!-- playfair for body text, jetbrains mono for ui labels -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  /* token system -- change palette here, nowhere else */
   :root {
     --bg: #0e0c0a; --surface: #12100c; --surface2: #16120e;
     --border: #2e2820; --border2: #2a2418; --gold: #c4943a;
@@ -16,25 +14,21 @@
     --red: #c43a3a; --green: #4a9a4a;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Playfair Display', Georgia, serif; min-height: 100vh; position: relative; overflow-x: hidden; }
+  body { background: var(--bg); color: var(--text); font-family: 'Playfair Display', Georgia, serif; min-height: 100vh; position: relative; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 
-  /* grain overlay -- svg noise, no external image */
+  /* film grain thing with inline svg noise */
   body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); background-repeat: repeat; background-size: 256px; opacity: 0.6; }
 
   .gold-line { height: 3px; background: linear-gradient(90deg,#c4943a,#8b5e1e,#c4943a); position: relative; z-index: 1; }
-  .container { max-width: 820px; margin: 0 auto; padding: 52px 28px 80px; position: relative; z-index: 1; }
+  .container { max-width: 820px; margin: 0 auto; padding: 60px 28px 90px; position: relative; z-index: 1; }
 
-  /* header */
-  header { margin-bottom: 44px; }
-  .header-row { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
-  h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 400; letter-spacing: -0.02em; color: #f0e8d8; line-height: 1; }
-  .badge { font-size: 11px; font-family: 'JetBrains Mono',monospace; color: var(--gold); border: 1px solid #c4943a44; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.12em; text-transform: uppercase; }
+  header { margin-bottom: 44px; text-align: center; }
+  h1 { font-size: clamp(2rem,5vw,3.2rem); font-weight: 400; letter-spacing: -0.02em; color: #f0e8d8; line-height: 1; margin-bottom: 10px; }
   .subtitle { color: var(--text-dim); font-size: 15px; font-style: italic; }
-  .scanning { margin-top: 14px; font-size: 11.5px; color: var(--text-darker); font-family: 'JetBrains Mono',monospace; display: flex; align-items: center; gap: 8px; }
+  .scanning { margin-top: 14px; font-size: 11.5px; color: var(--text-darker); font-family: 'JetBrains Mono',monospace; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .scanning .arrow { color: #c4943a44; }
-  .scanning em { color: var(--text-dim); font-style: italic; }
+  .scanning em { color: var(--text-dim); font-style: italic; transition: opacity 0.3s ease; }
 
-  /* mode switcher -- offline scan vs ai rewrite */
   .mode-switcher { display: flex; gap: 0; margin-bottom: 32px; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
   .mode-btn { flex: 1; padding: 11px 20px; background: transparent; border: none; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .mode-btn + .mode-btn { border-left: 1px solid var(--border); }
@@ -45,25 +39,40 @@
   .section-block { margin-bottom: 24px; }
   .block-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 10px; }
 
-  /* provider pills */
-  .provider-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-  .pill { padding: 7px 16px; background: transparent; border: 1px solid var(--border); border-radius: 2px; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 7px; }
+  /* provider + key config as a unified card */
+  .ai-config-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; padding: 22px 24px; margin-bottom: 28px; }
+  .config-section { margin-bottom: 18px; }
+  .config-section:last-child { margin-bottom: 0; }
+  .config-section-label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .config-divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .provider-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { padding: 8px 16px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-darker); font-size: 11px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 7px; flex: 1; justify-content: center; min-width: 0; }
   .pill:hover { border-color: var(--text-dim); color: var(--text-muted); }
   .pill.active { border-color: var(--gold); color: var(--gold); background: #c4943a0d; }
   .pill .pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; flex-shrink: 0; }
+  .pill .pdot.has-key { opacity: 1; background: var(--green); }
 
-  /* api key row */
-  .key-row { display: flex; gap: 10px; }
-  .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-body); font-size: 12px; padding: 10px 14px; outline: none; font-family: 'JetBrains Mono',monospace; transition: border-color 0.2s; letter-spacing: 0.04em; }
-  .key-input:focus { border-color: #3e3428; }
+  .key-row { display: flex; gap: 8px; align-items: center; }
+  .key-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; color: var(--text-body); font-size: 12px; padding: 10px 14px; outline: none; font-family: 'JetBrains Mono',monospace; transition: border-color 0.2s; letter-spacing: 0.04em; min-width: 0; }
+  /* key-input focus handled above with textarea */
   .key-input::placeholder { color: var(--text-darkest); }
-  .key-save { padding: 10px 16px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-size: 10px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .key-actions { display: flex; gap: 6px; }
+  .key-save { padding: 10px 14px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-dim); font-size: 10px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .key-save:hover { border-color: var(--gold); color: var(--gold); }
-  .key-hint { font-size: 10.5px; color: var(--text-darkest); font-family: 'JetBrains Mono',monospace; margin-top: 7px; }
+  .key-clear { padding: 10px 10px; background: transparent; border: 1px solid var(--border); border-radius: 3px; color: var(--text-darkest); font-size: 10px; font-family: 'JetBrains Mono',monospace; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .key-clear:hover { border-color: var(--red); color: var(--red); }
+  .key-hint { font-size: 10.5px; color: var(--text-darkest); font-family: 'JetBrains Mono',monospace; margin-top: 2px; }
   .key-hint a { color: var(--text-dim); text-decoration: underline; }
+  .key-saved-toast { display: inline-block; margin-left: 8px; font-size: 10px; color: var(--green); font-family: 'JetBrains Mono',monospace; opacity: 0; transition: opacity 0.3s; }
+  .key-saved-toast.show { opacity: 1; }
+  .key-status { display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; font-size: 10px; font-family: 'JetBrains Mono',monospace; color: var(--text-dim); flex-wrap: wrap; }
+  .key-status .ks-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .key-status .ks-dot.saved { background: var(--green); }
+  .key-status .ks-dot.empty { background: var(--text-darkest); }
+  .key-status .ks-count { color: var(--text-darker); margin-left: auto; }
 
-  /* status bar -- dot pulses while api call is live */
-  .status-bar { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 3px; border: 1px solid var(--border2); background: var(--surface); margin-bottom: 28px; font-family: 'JetBrains Mono',monospace; font-size: 11px; transition: border-color 0.3s; }
+  .status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 3px; border: 1px solid var(--border2); background: var(--surface); margin-bottom: 28px; font-family: 'JetBrains Mono',monospace; font-size: 12px; transition: border-color 0.3s; flex-wrap: nowrap; overflow: hidden; }
   .status-bar.calling { border-color: #c4943a44; }
   .status-bar.done { border-color: #2a4a2a; }
   .status-bar.error { border-color: #5a2010; }
@@ -73,31 +82,35 @@
   .sdot.done { background: var(--green); }
   .sdot.error { background: var(--red); }
   .sdot.offline { background: #5a8a5a; }
-  .stext { color: var(--text-dim); }
-  .sprovider { color: var(--text-darker); margin-left: auto; font-size: 10px; }
+  .stext { color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .sprovider { color: var(--text-darker); margin-left: auto; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
 
   .label-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
   .lbl { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; }
   .word-count { font-size: 11px; color: var(--text-darker); font-family: 'JetBrains Mono',monospace; }
 
-  /* playfair in the textarea -- feels editorial */
-  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-body); font-size: 15px; line-height: 1.72; padding: 18px 20px; resize: vertical; outline: none; font-family: 'Playfair Display',serif; transition: border-color 0.2s; caret-color: var(--gold); min-height: 200px; }
-  textarea:focus { border-color: #3e3428; }
+  /* playfair in a textarea just hits different */
+  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text-body); font-size: 15px; line-height: 1.72; padding: 22px 24px; resize: vertical; outline: none; font-family: 'Playfair Display',serif; transition: border-color 0.2s; caret-color: var(--gold); min-height: 440px; }
+  textarea:focus, .key-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px #c4943a33; }
   textarea::placeholder { color: var(--text-darkest); }
 
-  button.primary { display: block; width: 100%; padding: 15px 28px; background: var(--gold); color: var(--bg); border: none; border-radius: 3px; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'JetBrains Mono',monospace; cursor: pointer; transition: all 0.18s; margin: 20px 0 32px; }
+  /* all buttons get a lil lift on hover — feels alive */
+  button { transition: all 0.2s ease; }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  button:disabled:hover { transform: none; }
+
+  button.primary { display: block; width: 100%; padding: 15px 28px; background: var(--gold); color: var(--bg); border: none; border-radius: 3px; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'JetBrains Mono',monospace; cursor: pointer; transition: all 0.2s ease; margin: 20px 0 32px; }
   button.primary:disabled { background: #1e1a16; color: var(--text-darkest); cursor: not-allowed; }
-  button.primary:not(:disabled):hover { background: #d4a44a; }
+  button.primary:not(:disabled):hover { background: #d4a44a; transform: translateY(-2px); }
   button.primary.offline-btn:not(:disabled) { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
   button.primary.offline-btn:not(:disabled):hover { background: #c4943a12; }
 
   .spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid #3a3530; border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 10px; vertical-align: middle; }
   .error-box { background: #1e1008; border: 1px solid #5a2010; border-radius: 4px; padding: 14px 18px; color: #d04020; font-size: 13px; margin-bottom: 28px; font-family: 'JetBrains Mono',monospace; display: none; }
 
-  /* --- OFFLINE SCAN RESULTS --- */
+  /* results panels start hidden, JS will set display:block when ready */
   .scan-results { display: none; animation: fadeUp 0.4s ease; }
-
-  /* score bar at the top */
   .score-bar { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
   .score-num { font-size: 2.8rem; font-family: 'JetBrains Mono',monospace; font-weight: 600; line-height: 1; }
   .score-num.clean { color: var(--green); }
@@ -112,29 +125,25 @@
   .score-fill.mid { background: var(--gold); }
   .score-fill.cringe { background: var(--red); }
 
-  /* highlighted preview of the text with bad patterns marked */
   .highlight-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 22px; margin-bottom: 20px; font-size: 15px; line-height: 1.78; color: var(--text-body); font-family: 'Playfair Display',serif; white-space: pre-wrap; word-break: break-word; }
-  .highlight-box .hl { background: #c43a3a22; border-bottom: 1.5px solid var(--red); border-radius: 2px; color: #e88; cursor: default; position: relative; }
+  .highlight-box .hl { background: #c43a3a22; border-bottom: 1.5px solid var(--red); border-radius: 2px; color: #e88; cursor: default; }
   .highlight-box .hl-swap { background: #c4943a1a; border-bottom: 1.5px solid var(--gold); border-radius: 2px; color: #d4a44a; cursor: default; }
   .hl-legend { display: flex; gap: 18px; margin-bottom: 12px; font-size: 11px; font-family: 'JetBrains Mono',monospace; color: var(--text-dim); }
   .hl-legend span { display: flex; align-items: center; gap: 6px; }
   .hl-legend .dot-red { width: 8px; height: 8px; background: #c43a3a44; border: 1.5px solid var(--red); border-radius: 1px; }
   .hl-legend .dot-gold { width: 8px; height: 8px; background: #c4943a1a; border: 1.5px solid var(--gold); border-radius: 1px; }
 
-  /* auto-fixed version */
   .fixed-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 22px; margin-bottom: 12px; font-size: 15px; line-height: 1.78; color: var(--text-body); font-family: 'Playfair Display',serif; white-space: pre-wrap; word-break: break-word; min-height: 80px; }
 
-  /* caught patterns list */
   .caught-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 20px; margin-bottom: 20px; }
   .caught-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-  .caught-list li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--text-muted); font-family: 'JetBrains Mono',monospace; }
+  .caught-list li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--text-muted); font-family: 'JetBrains Mono',monospace; flex-wrap: wrap; }
   .caught-list li .ctag { color: var(--red); font-size: 11px; flex-shrink: 0; }
   .caught-list li .cword { color: #e88; }
   .caught-list li .carrow { color: var(--text-darkest); }
   .caught-list li .cfix { color: var(--gold); }
   .caught-list li .ccat { color: var(--text-darkest); font-size: 10px; margin-left: auto; }
 
-  /* --- AI RESULTS (same as before) --- */
   .ai-results { display: none; animation: fadeUp 0.4s ease; }
   .tells-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 18px 20px; margin-bottom: 24px; }
   .slabel { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; margin-bottom: 12px; }
@@ -159,6 +168,62 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--surface); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* goofy footer — because every project needs a dumb footer */
+  .footer { position: relative; z-index: 1; padding: 40px 28px 36px; text-align: center; border-top: 1px solid var(--border2); margin-top: 20px; }
+  .footer-line { font-size: 13px; color: var(--text-dim); font-family: 'JetBrains Mono',monospace; line-height: 1.8; }
+  .footer-line .emoji { font-size: 16px; display: inline-block; animation: wiggle 2s ease-in-out infinite; }
+  .footer-sub { font-size: 11px; color: var(--text-darkest); font-family: 'JetBrains Mono',monospace; margin-top: 8px; font-style: italic; }
+  @keyframes wiggle { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
+
+  /* --- RESPONSIVE --- */
+  @media (max-width: 680px) {
+    .container { padding: 36px 20px 60px; }
+    header { margin-bottom: 32px; }
+    .score-bar { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .score-num { font-size: 2.2rem; }
+  }
+  @media (max-width: 480px) {
+    .container { padding: 24px 14px 48px; }
+    h1 { font-size: 1.8rem; }
+    header { margin-bottom: 24px; }
+    .scanning { font-size: 10.5px; flex-wrap: wrap; }
+    .mode-switcher { flex-direction: row; }
+    .mode-btn { font-size: 10px; padding: 10px 12px; }
+    .pill { font-size: 10px; padding: 8px 10px; flex: 1 1 calc(50% - 6px); justify-content: center; }
+    .key-row { gap: 6px; }
+    .key-save { padding: 10px 10px; font-size: 9px; }
+    .key-clear { padding: 10px 10px; font-size: 11px; }
+    .tab { padding: 10px 14px; font-size: 10px; }
+    textarea { min-height: 140px; font-size: 14px; padding: 14px 16px; }
+    button.primary { padding: 14px 20px; font-size: 12px; }
+    button.copy { width: 100%; text-align: center; margin-top: 10px; }
+    .caught-list li .ccat { display: none; }
+    .status-bar { padding: 10px 12px; font-size: 10px; }
+    .ai-config-card { padding: 16px; }
+    .footer { padding: 28px 14px 24px; }
+  }
+  @media (max-width: 360px) {
+    .container { padding: 20px 12px 40px; }
+    h1 { font-size: 1.5rem; }
+    .pill { font-size: 9.5px; padding: 7px 8px; }
+    .mode-btn { font-size: 9.5px; padding: 9px 10px; }
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .pill { min-height: 44px; }
+    .mode-btn { min-height: 44px; }
+    button.primary { min-height: 52px; }
+    button.copy { min-height: 44px; }
+    .key-save, .key-clear { min-height: 44px; }
+    .tab { min-height: 44px; }
+    /* kill the lift effect on touch -- feels wrong */
+    button:hover { transform: none; }
+  }
+  @media (max-width: 768px) and (orientation: landscape) {
+    .container { padding: 20px 24px 40px; }
+    header { margin-bottom: 20px; }
+    textarea { min-height: 100px; }
+  }
 </style>
 </head>
 <body>
@@ -166,18 +231,14 @@
 <div class="container">
 
   <header>
-    <div class="header-row">
-      <h1>Humanizer</h1>
-      <span class="badge">v1.0</span>
-    </div>
+    <h1>Humanizer</h1>
     <p class="subtitle">Strip the AI out. Put the human back in.</p>
     <div class="scanning">
       <span class="arrow">›</span>
-      currently scanning for: <em id="random-tell"></em>
+      currently catching: <em id="random-tell"></em>
     </div>
   </header>
 
-  <!-- two modes: offline scan (no api needed) and ai rewrite -->
   <div class="mode-switcher">
     <button class="mode-btn active" id="mode-offline" data-mode="offline">
       <span class="micon">⚡</span> Offline Scan
@@ -187,95 +248,99 @@
     </button>
   </div>
 
-  <!-- ai provider config -- hidden in offline mode -->
   <div id="ai-config" style="display:none;">
-    <div class="section-block">
-      <div class="block-label">AI Provider</div>
-      <div class="provider-pills">
-        <button class="pill active" data-provider="anthropic"><span class="pdot"></span>Anthropic</button>
-        <button class="pill" data-provider="gemini"><span class="pdot"></span>Gemini</button>
-        <button class="pill" data-provider="groq"><span class="pdot"></span>Groq</button>
+    <div class="ai-config-card">
+      <div class="config-section">
+        <div class="config-section-label">Pick a provider</div>
+        <div class="provider-pills" id="provider-pills"></div>
       </div>
-      <!-- key stored in memory per provider, not localStorage -->
-      <div class="key-row">
-        <input class="key-input" id="api-key" type="password" placeholder="sk-ant-..." autocomplete="off" />
-        <button class="key-save" id="save-key-btn">Save</button>
+      <div class="config-divider"></div>
+      <div class="config-section">
+        <div class="config-section-label">API Key <span class="key-saved-toast" id="key-toast">✓ saved</span></div>
+        <div class="key-row">
+          <input class="key-input" id="api-key" type="password" placeholder="paste your key here..." autocomplete="off" />
+          <div class="key-actions">
+            <button class="key-save" id="save-key-btn">Save</button>
+            <button class="key-clear" id="clear-key-btn">×</button>
+          </div>
+        </div>
+        <div class="key-hint" id="key-hint">Get your key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
       </div>
-      <div class="key-hint" id="key-hint">Get your key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      <div class="config-divider"></div>
+      <div class="key-status" id="key-status"></div>
     </div>
   </div>
 
-  <!-- status bar -- changes per mode and per api state -->
   <div class="status-bar" id="status-bar">
     <div class="sdot offline" id="sdot"></div>
-    <span class="stext" id="stext">Offline scan ready — no API needed</span>
+    <span class="stext" id="stext">ready to scan — no internet needed</span>
     <span class="sprovider" id="sprovider">rule-based</span>
   </div>
 
   <div class="label-row">
-    <span class="lbl">Input text</span>
+    <span class="lbl">your text</span>
     <span class="word-count" id="word-count">0 words</span>
   </div>
-  <textarea id="input-text" rows="9" placeholder="Paste your AI-sounding text here. The more cringe, the better."></textarea>
+  <textarea id="input-text" rows="18" placeholder="Paste the AI slop here. The worse it is, the more satisfying the result."></textarea>
 
   <button class="primary offline-btn" id="main-btn" disabled>Scan for AI patterns →</button>
   <div class="error-box" id="error-box"></div>
 
-  <!-- OFFLINE RESULTS -->
+  <!-- offline scan results -->
   <div class="scan-results" id="scan-results">
-
-    <!-- cringe score -->
     <div class="score-bar">
       <div class="score-num" id="score-num">0</div>
       <div class="score-info">
-        <div class="score-label">AI Cringe Score</div>
+        <div class="score-label">cringe score</div>
         <div class="score-verdict" id="score-verdict">—</div>
         <div class="score-track"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
       </div>
     </div>
-
-    <!-- highlighted original text -->
-    <div class="block-label" style="margin-bottom:8px;">Your text — patterns highlighted</div>
+    <div class="block-label" style="margin-bottom:8px;">your text — bad parts highlighted</div>
     <div class="hl-legend">
-      <span><span class="dot-red"></span> flag only</span>
+      <span><span class="dot-red"></span> needs manual fix</span>
       <span><span class="dot-gold"></span> auto-fixed</span>
     </div>
     <div class="highlight-box" id="highlight-box"></div>
-
-    <!-- patterns caught -->
     <div class="caught-box">
-      <div class="slabel">Patterns caught</div>
+      <div class="slabel">what got caught</div>
       <ul class="caught-list" id="caught-list"></ul>
     </div>
-
-    <!-- auto-fixed version (simple swaps only) -->
-    <div class="block-label" style="margin-bottom:8px;">Auto-fixed <span style="color:var(--text-darkest);font-size:10px;font-family:'JetBrains Mono',monospace;"> — simple replacements only, rest needs manual edit</span></div>
+    <div class="block-label" style="margin-bottom:8px;">auto-fixed version <span style="color:var(--text-darkest);font-size:10px;font-family:'JetBrains Mono',monospace;"> — easy swaps only, the rest is on you</span></div>
     <div class="fixed-box" id="fixed-box"></div>
     <button class="copy" id="copy-fixed-btn">Copy fixed text</button>
-
   </div>
 
-  <!-- AI RESULTS -->
+  <!-- ai rewrite results -->
   <div class="ai-results" id="ai-results">
     <div class="tells-box">
-      <div class="slabel">Remaining AI tells caught in draft</div>
+      <div class="slabel">AI tells still left in draft</div>
       <ul class="tells-list" id="tells-list"></ul>
     </div>
     <div class="tabs">
-      <button class="tab active" data-tab="final">Final version</button>
+      <button class="tab active" data-tab="final">Final</button>
       <button class="tab" data-tab="draft">Draft</button>
     </div>
     <div class="output-box" id="output-box"></div>
     <button class="copy" id="copy-btn">Copy text</button>
     <div class="changes-section">
-      <div class="slabel">Changes made</div>
+      <div class="slabel">what changed</div>
       <ul class="changes-list" id="changes-list"></ul>
     </div>
   </div>
 
+  <footer class="footer">
+    <div class="footer-line">
+      Works on my machine. Probably yours too. <span class="emoji">🤡</span>
+    </div>
+    <div class="footer-sub">
+      No AI overlords harmed in the process.
+    </div>
+  </footer>
+
 </div>
 <script>
-// rotating tells in the header
+// dumb stuff AI loves to say — we cycle these in the header for laughs
 const AI_TELLS = [
   "em dashes lurking", "pivotal moments detected", "vibrant culture spotted",
   "experts mysteriously agree", "exciting times ahead™", "nestled somewhere breathtaking",
@@ -283,443 +348,813 @@ const AI_TELLS = [
 ];
 
 // -----------------------------------------------------------------------
-// OFFLINE PATTERN DATABASE
-// each entry: { pattern (string or regex), category, fix (optional replacement) }
-// fix = null means flag only, fix = string means auto-replace
+// the big pattern list — every cringey AI phrase we can catch
+// fix = null means we just flag it, fix = "something" means we swap it
 // -----------------------------------------------------------------------
 const PATTERNS = [
-  // significance inflation
+  // significance inflation — AI loves making everything sound historic
   { p: /\bstands as\b/gi,           cat: 'significance inflation', fix: 'is' },
   { p: /\bserves as\b/gi,           cat: 'significance inflation', fix: 'is' },
   { p: /\bfunctions as\b/gi,        cat: 'significance inflation', fix: 'is' },
   { p: /\btestament to\b/gi,        cat: 'significance inflation', fix: null },
   { p: /\bpivotal moment\b/gi,      cat: 'significance inflation', fix: null },
   { p: /\bpivotal role\b/gi,        cat: 'significance inflation', fix: null },
-  { p: /\bunderscore[sd]?\b/gi,     cat: 'significance inflation', fix: null },
-  { p: /\bevolving landscape\b/gi,  cat: 'significance inflation', fix: null },
-  { p: /\bindelible mark\b/gi,      cat: 'significance inflation', fix: null },
-  { p: /\bkey turning point\b/gi,   cat: 'significance inflation', fix: null },
-  { p: /\bsetting the stage\b/gi,   cat: 'significance inflation', fix: null },
-  { p: /\bdeeply rooted\b/gi,       cat: 'significance inflation', fix: null },
-  { p: /\bmarks a shift\b/gi,       cat: 'significance inflation', fix: null },
+  { p: /\bcornerstone of\b/gi,      cat: 'significance inflation', fix: null },
+  { p: /\bparadigm shift\b/gi,      cat: 'significance inflation', fix: null },
+  { p: /\bgroundbreaking\b/gi,      cat: 'significance inflation', fix: 'important' },
+  { p: /\bsignificant strides\b/gi, cat: 'significance inflation', fix: 'progress' },
 
-  // promotional language
-  { p: /\bboasts\b/gi,              cat: 'promotional',  fix: 'has' },
-  { p: /\bvibrant\b/gi,             cat: 'promotional',  fix: null },
-  { p: /\bnestled\b/gi,             cat: 'promotional',  fix: null },
-  { p: /\bbreathtaking\b/gi,        cat: 'promotional',  fix: null },
-  { p: /\bgroundbreaking\b/gi,      cat: 'promotional',  fix: null },
-  { p: /\brenowned\b/gi,            cat: 'promotional',  fix: 'known' },
-  { p: /\bmust-visit\b/gi,          cat: 'promotional',  fix: null },
-  { p: /\bstunning\b/gi,            cat: 'promotional',  fix: null },
-  { p: /\bin the heart of\b/gi,     cat: 'promotional',  fix: 'in' },
+  // vocabulary overreach — nobody talks like this irl
+  { p: /\btapestry\b/gi,            cat: 'vocabulary overreach', fix: null },
+  { p: /\bnestled\b/gi,             cat: 'vocabulary overreach', fix: 'located' },
+  { p: /\bvibrant\b/gi,             cat: 'vocabulary overreach', fix: 'lively' },
+  { p: /\bmeticulous(ly)?\b/gi,     cat: 'vocabulary overreach', fix: 'careful$1' },
+  { p: /\bmultifaceted\b/gi,        cat: 'vocabulary overreach', fix: 'complex' },
+  { p: /\bburgeoning\b/gi,          cat: 'vocabulary overreach', fix: 'growing' },
+  { p: /\bundeniable\b/gi,          cat: 'vocabulary overreach', fix: 'clear' },
+  { p: /\bindelible\b/gi,           cat: 'vocabulary overreach', fix: 'lasting' },
+  { p: /\blabyrinth(ine)?\b/gi,     cat: 'vocabulary overreach', fix: null },
+  { p: /\baforementioned\b/gi,      cat: 'vocabulary overreach', fix: 'this' },
+  { p: /\bplethora\b/gi,            cat: 'vocabulary overreach', fix: 'many' },
+  { p: /\bmyriad\b/gi,              cat: 'vocabulary overreach', fix: 'many' },
+  { p: /\bseamless(ly)?\b/gi,       cat: 'vocabulary overreach', fix: 'smooth$1' },
+  { p: /\beverchanging\b/gi,        cat: 'vocabulary overreach', fix: 'changing' },
+  { p: /\bever-changing\b/gi,       cat: 'vocabulary overreach', fix: 'changing' },
+  { p: /\beverevolving\b/gi,        cat: 'vocabulary overreach', fix: 'evolving' },
+  { p: /\bever-evolving\b/gi,       cat: 'vocabulary overreach', fix: 'evolving' },
+  { p: /\binnumerable\b/gi,         cat: 'vocabulary overreach', fix: 'many' },
+  { p: /\bcommence\b/gi,            cat: 'vocabulary overreach', fix: 'start' },
+  { p: /\butilize\b/gi,             cat: 'vocabulary overreach', fix: 'use' },
+  { p: /\bfacilitate\b/gi,          cat: 'vocabulary overreach', fix: 'help' },
+  { p: /\bpivotal\b/gi,             cat: 'vocabulary overreach', fix: 'key' },
+  { p: /\bcrucial\b/gi,             cat: 'vocabulary overreach', fix: 'important' },
+  { p: /\bholistic\b/gi,            cat: 'vocabulary overreach', fix: 'complete' },
+  { p: /\bdelve\b/gi,               cat: 'vocabulary overreach', fix: 'look into' },
+  { p: /\bdelving\b/gi,             cat: 'vocabulary overreach', fix: 'looking into' },
 
-  // chatbot artifacts
-  { p: /\bgreat question[!.]?\b/gi,          cat: 'chatbot artifact', fix: '' },
-  { p: /\bi hope this helps[!.]?\b/gi,       cat: 'chatbot artifact', fix: '' },
-  { p: /\bcertainly[!,]?\b/gi,               cat: 'chatbot artifact', fix: '' },
-  { p: /\babsolutely[!,]?\b/gi,              cat: 'chatbot artifact', fix: '' },
-  { p: /\bof course[!,]?\b/gi,               cat: 'chatbot artifact', fix: '' },
-  { p: /let me know if you('d like| have| need)/gi, cat: 'chatbot artifact', fix: '' },
-  { p: /feel free to (ask|reach out)/gi,     cat: 'chatbot artifact', fix: '' },
+  // filler phrases — you can cut these and lose nothing
+  { p: /\bit'?s worth noting that\b/gi,       cat: 'filler phrase', fix: '' },
+  { p: /\bit'?s important to note that\b/gi,  cat: 'filler phrase', fix: '' },
+  { p: /\bit'?s interesting to note that\b/gi,cat: 'filler phrase', fix: '' },
+  { p: /\bin today'?s world\b/gi,              cat: 'filler phrase', fix: 'now' },
+  { p: /\bin today'?s (digital |modern )?landscape\b/gi, cat: 'filler phrase', fix: 'now' },
+  { p: /\bin the realm of\b/gi,                cat: 'filler phrase', fix: 'in' },
+  { p: /\bin the world of\b/gi,                cat: 'filler phrase', fix: 'in' },
+  { p: /\bat the end of the day\b/gi,          cat: 'filler phrase', fix: 'ultimately' },
+  { p: /\bwhen it comes to\b/gi,               cat: 'filler phrase', fix: 'for' },
+  { p: /\bin this day and age\b/gi,            cat: 'filler phrase', fix: 'now' },
+  { p: /\bneedless to say\b/gi,                cat: 'filler phrase', fix: '' },
 
-  // vague attributions
-  { p: /\bexperts (argue|say|believe|suggest)\b/gi, cat: 'vague attribution', fix: null },
-  { p: /\bindustry observers\b/gi,           cat: 'vague attribution', fix: null },
-  { p: /\bsome critics (argue|say|claim)\b/gi, cat: 'vague attribution', fix: null },
-  { p: /\bstudies show\b/gi,                 cat: 'vague attribution', fix: null },
-  { p: /\bresearch suggests\b/gi,            cat: 'vague attribution', fix: null },
+  // hedge phrases — AI hedges everything to avoid being wrong
+  { p: /\bit'?s important to remember that\b/gi,cat: 'hedge phrase', fix: '' },
+  { p: /\bit'?s essential to\b/gi,              cat: 'hedge phrase', fix: '' },
+  { p: /\bone might argue\b/gi,                 cat: 'hedge phrase', fix: null },
+  { p: /\bit could be argued\b/gi,              cat: 'hedge phrase', fix: null },
+  { p: /\bit should be noted\b/gi,              cat: 'hedge phrase', fix: '' },
+  { p: /\bwhile it'?s true that\b/gi,           cat: 'hedge phrase', fix: '' },
 
-  // filler phrases -- these have clean 1:1 fixes
-  { p: /\bin order to\b/gi,                  cat: 'filler', fix: 'to' },
-  { p: /\bat this point in time\b/gi,        cat: 'filler', fix: 'now' },
-  { p: /\bdue to the fact that\b/gi,         cat: 'filler', fix: 'because' },
-  { p: /\bin the event that\b/gi,            cat: 'filler', fix: 'if' },
-  { p: /\bit is important to note that\b/gi, cat: 'filler', fix: '' },
-  { p: /\bit should be noted that\b/gi,      cat: 'filler', fix: '' },
-  { p: /\bat its core[,]?\b/gi,              cat: 'filler', fix: '' },
-  { p: /\bin conclusion[,]?\b/gi,            cat: 'filler', fix: '' },
-  { p: /\bhas the ability to\b/gi,           cat: 'filler', fix: 'can' },
-  { p: /\bin terms of\b/gi,                  cat: 'filler', fix: 'for' },
+  // forced enthusiasm — that fake excitement
+  { p: /\bexciting opportunities?\b/gi,          cat: 'forced enthusiasm', fix: null },
+  { p: /\bexciting times?\b/gi,                  cat: 'forced enthusiasm', fix: null },
+  { p: /\btruly remarkable\b/gi,                  cat: 'forced enthusiasm', fix: 'notable' },
+  { p: /\bremarkable\b/gi,                        cat: 'forced enthusiasm', fix: 'notable' },
+  { p: /\bfascinating\b/gi,                       cat: 'forced enthusiasm', fix: 'interesting' },
+  { p: /\bextraordinary\b/gi,                     cat: 'forced enthusiasm', fix: 'unusual' },
+  { p: /\bprofound(ly)?\b/gi,                     cat: 'forced enthusiasm', fix: 'deep$1' },
+  { p: /\bimpactful\b/gi,                          cat: 'forced enthusiasm', fix: 'effective' },
 
-  // em dash
-  { p: /\u2014/g,                            cat: 'em dash', fix: ',' },
-  { p: /--/g,                                cat: 'em dash', fix: ',' },
+  // formulaic structure — the "not just X, it's Y" move
+  { p: /\bnot just .{3,40}, (but |it'?s )/gi,     cat: 'formulaic structure', fix: null },
+  { p: /\bfrom .{3,30} to .{3,30} to \b/gi,       cat: 'formulaic structure', fix: null },
+  { p: /\bwhether .{3,40} or .{3,40},/gi,         cat: 'formulaic structure', fix: null },
 
-  // generic positive conclusions
-  { p: /the future (looks|seems) bright/gi,  cat: 'generic conclusion', fix: null },
-  { p: /exciting times (lie|are) ahead/gi,   cat: 'generic conclusion', fix: null },
-  { p: /journey (toward|towards) excellence/gi, cat: 'generic conclusion', fix: null },
+  // corporate/consulting speak
+  { p: /\beveraging\b/gi,           cat: 'corporate speak', fix: 'using' },
+  { p: /\bsynerg(y|ies|ize|istic)\b/gi, cat: 'corporate speak', fix: null },
+  { p: /\bstakeholders?\b/gi,       cat: 'corporate speak', fix: 'people involved' },
+  { p: /\bactionable insights?\b/gi,cat: 'corporate speak', fix: 'useful info' },
+  { p: /\brobust\b/gi,              cat: 'corporate speak', fix: 'strong' },
+  { p: /\bscalable\b/gi,            cat: 'corporate speak', fix: null },
+  { p: /\boptimize\b/gi,            cat: 'corporate speak', fix: 'improve' },
+  { p: /\bstreamline\b/gi,          cat: 'corporate speak', fix: 'simplify' },
+  { p: /\binnovative\b/gi,          cat: 'corporate speak', fix: 'new' },
+  { p: /\bthought leader(ship)?\b/gi,cat: 'corporate speak', fix: null },
+  { p: /\bbest practices?\b/gi,     cat: 'corporate speak', fix: null },
+  { p: /\bmoving forward\b/gi,      cat: 'corporate speak', fix: 'next' },
+  { p: /\bgame[- ]?changer\b/gi,    cat: 'corporate speak', fix: null },
+  { p: /\bdouble[- ]?down\b/gi,     cat: 'corporate speak', fix: null },
 
-  // excessive hedging
-  { p: /could potentially\b/gi,              cat: 'excessive hedging', fix: 'could' },
-  { p: /\bit could be argued\b/gi,           cat: 'excessive hedging', fix: null },
-  { p: /\bmight possibly\b/gi,               cat: 'excessive hedging', fix: 'might' },
+  // chatbot greetings — dead giveaway
+  { p: /^certainly[!.]?\s*/gim,      cat: 'chatbot greeting', fix: '' },
+  { p: /^absolutely[!.]?\s*/gim,     cat: 'chatbot greeting', fix: '' },
+  { p: /^of course[!.]?\s*/gim,      cat: 'chatbot greeting', fix: '' },
+  { p: /^great question[!.]?\s*/gim, cat: 'chatbot greeting', fix: '' },
+  { p: /^that'?s a great question[!.]?\s*/gim, cat: 'chatbot greeting', fix: '' },
 
-  // superficial -ing phrases tacked on
-  { p: /,\s*highlighting (the|its|their|how)/gi, cat: 'superficial -ing', fix: null },
-  { p: /,\s*underscoring (the|its|their|how)/gi, cat: 'superficial -ing', fix: null },
-  { p: /,\s*reflecting (the|its|their|how)/gi,   cat: 'superficial -ing', fix: null },
-  { p: /,\s*showcasing (the|its|their|how)/gi,   cat: 'superficial -ing', fix: null },
-  { p: /,\s*contributing to (the|a|an|its)/gi,   cat: 'superficial -ing', fix: null },
-  { p: /,\s*fostering (a|an|the)/gi,              cat: 'superficial -ing', fix: null },
+  // em dash overuse — AI puts these everywhere
+  { p: /\s—\s/g,                     cat: 'em dash overuse', fix: ' — ' },
 
-  // negative parallelism
-  { p: /it'?s not just .{3,60}; it'?s/gi,    cat: 'negative parallelism', fix: null },
+  // stiff transitions — real people don't write like a textbook
+  { p: /\bfurthermore\b/gi,          cat: 'stiff transition', fix: 'also' },
+  { p: /\bmoreover\b/gi,             cat: 'stiff transition', fix: 'also' },
+  { p: /\bnevertheless\b/gi,         cat: 'stiff transition', fix: 'still' },
+  { p: /\bnonetheless\b/gi,          cat: 'stiff transition', fix: 'still' },
+  { p: /\bconsequently\b/gi,         cat: 'stiff transition', fix: 'so' },
+  { p: /\bsubsequently\b/gi,         cat: 'stiff transition', fix: 'then' },
+  { p: /\bin conclusion\b/gi,        cat: 'stiff transition', fix: null },
+  { p: /\bto summarize\b/gi,         cat: 'stiff transition', fix: null },
+  { p: /\bin summary\b/gi,           cat: 'stiff transition', fix: null },
+
+  // dramatic closers — AI loves ending with a bang
+  { p: /\bonly time will tell\b/gi,              cat: 'dramatic closer', fix: null },
+  { p: /\bthe future (holds|is bright|looks)\b/gi, cat: 'dramatic closer', fix: null },
+  { p: /\breshap(e|es|ed|ing) the\b/gi,         cat: 'dramatic closer', fix: null },
+  { p: /\btransform(s|ed|ing)? the (way|landscape|world|future)\b/gi, cat: 'dramatic closer', fix: null },
+  { p: /\bevolving landscape\b/gi,               cat: 'dramatic closer', fix: null },
+  { p: /\bthe landscape of\b/gi,                 cat: 'dramatic closer', fix: null },
+
+  // stiff phrasing — just sounds robotic
+  { p: /\bin order to\b/gi,          cat: 'stiff phrasing', fix: 'to' },
+  { p: /\bdue to the fact that\b/gi, cat: 'stiff phrasing', fix: 'because' },
+  { p: /\bprior to\b/gi,            cat: 'stiff phrasing', fix: 'before' },
+  { p: /\bsubsequent to\b/gi,       cat: 'stiff phrasing', fix: 'after' },
+  { p: /\bin the event that\b/gi,   cat: 'stiff phrasing', fix: 'if' },
+  { p: /\bat this point in time\b/gi,cat: 'stiff phrasing', fix: 'now' },
+  { p: /\bfor the purpose of\b/gi,  cat: 'stiff phrasing', fix: 'to' },
+  { p: /\bin light of\b/gi,         cat: 'stiff phrasing', fix: 'given' },
+  { p: /\bwith regard to\b/gi,      cat: 'stiff phrasing', fix: 'about' },
+  { p: /\bin regard to\b/gi,        cat: 'stiff phrasing', fix: 'about' },
+  { p: /\bpertaining to\b/gi,       cat: 'stiff phrasing', fix: 'about' },
+  { p: /\bas a matter of fact\b/gi,  cat: 'stiff phrasing', fix: 'actually' },
+  { p: /\bnotwithstanding\b/gi,      cat: 'stiff phrasing', fix: 'despite' },
+  { p: /\bhenceforth\b/gi,           cat: 'stiff phrasing', fix: 'from now on' },
+  { p: /\bthereby\b/gi,              cat: 'stiff phrasing', fix: 'so' },
+  { p: /\bwherein\b/gi,              cat: 'stiff phrasing', fix: 'where' },
 ];
 
-// per-provider config
+
+// -----------------------------------------------------------------------
+// all the AI providers — add one = add an object, everything else adapts
+// -----------------------------------------------------------------------
 const PROVIDERS = {
-  anthropic: { label: 'anthropic / claude-sonnet-4', hint: '<a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>', placeholder: 'sk-ant-...' },
-  gemini:    { label: 'google / gemini-2.0-flash',   hint: '<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>', placeholder: 'AIza...' },
-  groq:      { label: 'groq / llama-3.3-70b',        hint: '<a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>', placeholder: 'gsk_...' },
+  anthropic: {
+    label: 'Anthropic',
+    placeholder: 'sk-ant-...',
+    hintUrl: 'https://console.anthropic.com',
+    hintLabel: 'console.anthropic.com',
+    model: 'claude-sonnet-4-20250514',
+    buildRequest(text, sys, key) {
+      return {
+        url: 'https://api.anthropic.com/v1/messages',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: this.model,
+            max_tokens: 4096,
+            system: sys,
+            messages: [{ role: 'user', content: text }],
+          }),
+        },
+      };
+    },
+    extractText(data) {
+      if (data.content && data.content[0]) return data.content[0].text;
+      return JSON.stringify(data);
+    },
+  },
+
+  openai: {
+    label: 'OpenAI',
+    placeholder: 'sk-...',
+    hintUrl: 'https://platform.openai.com/api-keys',
+    hintLabel: 'platform.openai.com/api-keys',
+    model: 'gpt-4o',
+    buildRequest(text, sys, key) {
+      return {
+        url: 'https://api.openai.com/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              { role: 'system', content: sys },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+      };
+    },
+    extractText(data) {
+      return data.choices?.[0]?.message?.content || JSON.stringify(data);
+    },
+  },
+
+  openrouter: {
+    label: 'OpenRouter',
+    placeholder: 'sk-or-v1-...',
+    hintUrl: 'https://openrouter.ai/keys',
+    hintLabel: 'openrouter.ai/keys',
+    // routes to claude by default, but you can change this to whatever
+    model: 'anthropic/claude-sonnet-4-20250514',
+    buildRequest(text, sys, key) {
+      return {
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+            'HTTP-Referer': window.location.href,
+            'X-Title': 'Humanizer',
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              { role: 'system', content: sys },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+      };
+    },
+    extractText(data) {
+      return data.choices?.[0]?.message?.content || JSON.stringify(data);
+    },
+  },
+
+  gemini: {
+    label: 'Gemini',
+    placeholder: 'AIza...',
+    hintUrl: 'https://aistudio.google.com',
+    hintLabel: 'aistudio.google.com',
+    model: 'gemini-2.5-flash',
+    // google puts the key in the url because of course they do
+    buildRequest(text, sys, key) {
+      return {
+        url: 'https://generativelanguage.googleapis.com/v1beta/models/' + this.model + ':generateContent?key=' + key,
+        options: {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: sys }] },
+            contents: [{ parts: [{ text: text }] }],
+          }),
+        },
+      };
+    },
+    extractText(data) {
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+    },
+  },
+
+  groq: {
+    label: 'Groq',
+    placeholder: 'gsk_...',
+    hintUrl: 'https://console.groq.com/keys',
+    hintLabel: 'console.groq.com/keys',
+    // free with rate limits — runs llama on their custom chips
+    model: 'llama-3.3-70b-versatile',
+    buildRequest(text, sys, key) {
+      return {
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              { role: 'system', content: sys },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+      };
+    },
+    extractText(data) {
+      return data.choices?.[0]?.message?.content || JSON.stringify(data);
+    },
+  },
 };
 
-const SYSTEM_PROMPT = `You are a writing editor that removes AI-generated patterns and makes text sound human.
 
-REMOVE: "stands as","serves as","testament to","pivotal moment","underscores","evolving landscape","boasts","vibrant","nestled","breathtaking","groundbreaking","renowned","highlighting...","underscoring...","Experts argue","Industry observers","Great question!","I hope this helps!","Certainly!","Absolutely!","It's not just X; it's Y","seamless, intuitive, and powerful",em dashes,"the future looks bright","exciting times lie ahead","could potentially possibly","In order to","At this point in time","It is important to note that"
-
-ADD: personality, opinions, varied sentence rhythm, specific details, first person when it fits, some mess.
-
-RESPOND ONLY with this JSON (no backticks, no preamble):
-{"draft":"first rewrite","aiTells":["tell1","tell2","tell3"],"final":"final polished version","changes":["change1","change2","change3"]}`;
-
-// state
-let currentMode = 'offline';
-let currentProvider = 'anthropic';
-let savedKeys = {};
-let currentResult = null;
-let currentTab = 'final';
-let fixedText = '';
-
-// elements
+// -----------------------------------------------------------------------
+// state + dom refs — the boring but necessary part
+// -----------------------------------------------------------------------
 const $ = id => document.getElementById(id);
-const randomTellEl = $('random-tell'), inputEl = $('input-text'), wordCountEl = $('word-count');
-const mainBtn = $('main-btn'), errorBox = $('error-box');
-const sdot = $('sdot'), stext = $('stext'), sprovider = $('sprovider'), statusBar = $('status-bar');
-const apiKeyInput = $('api-key'), saveKeyBtn = $('save-key-btn'), keyHint = $('key-hint');
+
+let mode = 'offline';
+let provider = 'anthropic';
+let currentTab = 'final';
+let aiResultsData = { final: '', draft: '', tells: [], changes: [] };
+
+// keys live in memory AND localStorage so you don't retype them every visit
+const apiKeys = {};
+const STORAGE_KEY = 'humanizer_api_keys';
+
+// grab any previously saved keys from localStorage
+function loadKeysFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      for (const id of Object.keys(PROVIDERS)) {
+        if (saved[id]) apiKeys[id] = saved[id];
+      }
+      const loaded = Object.keys(apiKeys).filter(k => apiKeys[k]);
+      if (loaded.length > 0) {
+        console.log('[humanizer] loaded saved keys for:', loaded.join(', '));
+      }
+    }
+  } catch (e) {
+    // storage full? private browsing? who knows
+    console.warn('[humanizer] couldnt read localStorage:', e.message);
+  }
+}
+
+// write all keys to localStorage
+function saveKeysToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiKeys));
+    console.log('[humanizer] keys saved to localStorage');
+  } catch (e) {
+    console.warn('[humanizer] couldnt write to localStorage:', e.message);
+  }
+}
+
+// load right away on page open
+loadKeysFromStorage();
+
+
+// dom refs
+const randomTellEl = $('random-tell');
+const inputEl = $('input-text');
+const wordCountEl = $('word-count');
+const mainBtn = $('main-btn');
+const errorBox = $('error-box');
+const statusBar = $('status-bar');
+const sdot = $('sdot');
+const stext = $('stext');
+const sprovider = $('sprovider');
+const apiKeyInput = $('api-key');
+const saveKeyBtn = $('save-key-btn');
+const clearKeyBtn = $('clear-key-btn');
+const keyHint = $('key-hint');
+const keyToast = $('key-toast');
+const keyStatusEl = $('key-status');
 const aiConfig = $('ai-config');
-const scanResultsEl = $('scan-results'), aiResultsEl = $('ai-results');
+const scanResultsEl = $('scan-results');
+const aiResultsEl = $('ai-results');
+const pillsContainer = $('provider-pills');
 
-randomTellEl.textContent = AI_TELLS[Math.floor(Math.random() * AI_TELLS.length)];
 
-// mode switching
+// build provider pills from config — green dot means a key is saved
+function buildProviderPills() {
+  pillsContainer.innerHTML = '';
+  for (const [id, cfg] of Object.entries(PROVIDERS)) {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (id === provider ? ' active' : '');
+    btn.dataset.provider = id;
+    const hasKey = apiKeys[id] && apiKeys[id].length > 0;
+    btn.innerHTML = '<span class="pdot' + (hasKey ? ' has-key' : '') + '"></span>' + cfg.label;
+    btn.addEventListener('click', () => {
+      pillsContainer.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      provider = id;
+      updateProviderUI();
+      updateBtnState();
+    });
+    pillsContainer.appendChild(btn);
+  }
+}
+
+// show which providers have saved keys
+function updateKeyStatus() {
+  const saved = Object.entries(apiKeys)
+    .filter(([k, v]) => v && v.length > 0 && PROVIDERS[k])
+    .map(([k]) => PROVIDERS[k].label);
+  const total = Object.keys(PROVIDERS).length;
+  if (saved.length === 0) {
+    keyStatusEl.innerHTML = '<span class="ks-dot empty"></span><span>no keys saved yet</span>';
+  } else {
+    keyStatusEl.innerHTML = '<span class="ks-dot saved"></span><span>got keys for: ' + saved.join(', ') + '</span><span class="ks-count">' + saved.length + '/' + total + ' providers</span>';
+  }
+}
+
+buildProviderPills();
+updateKeyStatus();
+
+
+// rotate the header tells with a fade
+let tellIdx = 0;
+function rotateTell() {
+  randomTellEl.style.opacity = '0';
+  setTimeout(() => {
+    randomTellEl.textContent = AI_TELLS[tellIdx % AI_TELLS.length];
+    randomTellEl.style.opacity = '1';
+    tellIdx++;
+  }, 300);
+}
+rotateTell();
+setInterval(rotateTell, 2400);
+
+
+// word counter
+inputEl.addEventListener('input', () => {
+  const words = inputEl.value.trim().split(/\s+/).filter(Boolean).length;
+  wordCountEl.textContent = words + ' word' + (words !== 1 ? 's' : '');
+  updateBtnState();
+});
+
+function updateBtnState() {
+  const hasText = inputEl.value.trim().length > 10;
+  if (mode === 'offline') {
+    mainBtn.disabled = !hasText;
+  } else {
+    mainBtn.disabled = !hasText || !apiKeys[provider];
+  }
+}
+
+
+// mode switching — offline scan vs ai rewrite
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    currentMode = btn.dataset.mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
-    if (currentMode === 'offline') {
-      aiConfig.style.display = 'none';
-      mainBtn.textContent = 'Scan for AI patterns →';
-      mainBtn.classList.add('offline-btn');
-      setStatus('offline', 'Offline scan ready — no API needed', 'rule-based');
-    } else {
-      aiConfig.style.display = 'block';
-      mainBtn.textContent = 'Humanize →';
-      mainBtn.classList.remove('offline-btn');
-      setStatus('idle', 'Ready', PROVIDERS[currentProvider].label);
-    }
-
-    // hide results when switching modes
+    mode = btn.dataset.mode;
+    aiConfig.style.display = mode === 'ai' ? 'block' : 'none';
     scanResultsEl.style.display = 'none';
     aiResultsEl.style.display = 'none';
     errorBox.style.display = 'none';
-
-    // re-check button state
-    mainBtn.disabled = !inputEl.value.trim();
+    if (mode === 'offline') {
+      mainBtn.textContent = 'find the cringe 2192';
+      mainBtn.classList.add('offline-btn');
+      sdot.className = 'sdot offline';
+      stext.textContent = 'ready to scan 2014 no internet needed';
+      sprovider.textContent = 'rule-based';
+      statusBar.className = 'status-bar';
+    } else {
+      mainBtn.textContent = 'Humanize \u2192';
+      mainBtn.classList.remove('offline-btn');
+      updateProviderUI();
+    }
+    updateBtnState();
   });
 });
 
-function setStatus(state, msg, providerLabel) {
-  sdot.className = 'sdot ' + state;
-  statusBar.className = 'status-bar ' + (state === 'offline' ? '' : state);
-  stext.textContent = msg;
-  if (providerLabel !== undefined) sprovider.textContent = providerLabel;
-}
 
-function selectProvider(p) {
-  currentProvider = p;
-  document.querySelectorAll('.pill').forEach(pill => pill.classList.toggle('active', pill.dataset.provider === p));
-  apiKeyInput.value = savedKeys[p] || '';
-  apiKeyInput.placeholder = PROVIDERS[p].placeholder;
-  keyHint.innerHTML = 'Get your key: ' + PROVIDERS[p].hint;
-  if (currentMode === 'ai') setStatus('idle', 'Ready', PROVIDERS[p].label);
-}
-
-document.querySelectorAll('.pill').forEach(pill => pill.addEventListener('click', () => selectProvider(pill.dataset.provider)));
-
-saveKeyBtn.addEventListener('click', () => {
-  const val = apiKeyInput.value.trim();
-  if (val) {
-    savedKeys[currentProvider] = val;
-    saveKeyBtn.textContent = 'Saved ✓';
-    setTimeout(() => saveKeyBtn.textContent = 'Save', 1500);
+// update UI when switching between providers
+function updateProviderUI() {
+  const cfg = PROVIDERS[provider];
+  if (!cfg) return;
+  apiKeyInput.placeholder = cfg.placeholder;
+  keyHint.innerHTML = 'Get your key: <a href="' + cfg.hintUrl + '" target="_blank">' + cfg.hintLabel + '</a>';
+  if (apiKeys[provider] && apiKeys[provider].length > 0) {
+    apiKeyInput.value = apiKeys[provider];
+    sdot.className = 'sdot idle';
+    stext.textContent = 'good to go 2014 key loaded';
+    sprovider.textContent = cfg.label.toLowerCase();
+    statusBar.className = 'status-bar';
+  } else {
+    apiKeyInput.value = '';
+    sdot.className = 'sdot idle';
+    stext.textContent = 'need a key for ' + cfg.label;
+    sprovider.textContent = cfg.label.toLowerCase();
+    statusBar.className = 'status-bar';
   }
+}
+
+
+// saving a key — goes to memory + localStorage
+function saveCurrentKey() {
+  const key = apiKeyInput.value.trim();
+  if (!key) return;
+  apiKeys[provider] = key;
+  saveKeysToStorage();
+  const cfg = PROVIDERS[provider];
+  sdot.className = 'sdot idle';
+  stext.textContent = "Key saved \u2014 you won't need to enter it again";
+  sprovider.textContent = cfg.label.toLowerCase();
+  statusBar.className = 'status-bar';
+  keyToast.textContent = '\u2713 saved';
+  keyToast.classList.add('show');
+  setTimeout(() => keyToast.classList.remove('show'), 2000);
+  buildProviderPills();
+  updateKeyStatus();
+  updateBtnState();
+}
+
+saveKeyBtn.addEventListener('click', saveCurrentKey);
+// enter key should save too, obviously
+apiKeyInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveCurrentKey();
 });
 
-inputEl.addEventListener('input', () => {
-  const words = inputEl.value.trim() ? inputEl.value.trim().split(/\s+/).length : 0;
-  wordCountEl.textContent = words + (words === 1 ? ' word' : ' words');
-  mainBtn.disabled = !inputEl.value.trim();
+
+// clearing a key
+clearKeyBtn.addEventListener('click', () => {
+  apiKeys[provider] = '';
+  apiKeyInput.value = '';
+  saveKeysToStorage();
+  const cfg = PROVIDERS[provider];
+  sdot.className = 'sdot idle';
+  stext.textContent = 'key wiped for ' + cfg.label;
+  sprovider.textContent = cfg.label.toLowerCase();
+  keyToast.textContent = '\u2713 cleared';
+  keyToast.classList.add('show');
+  setTimeout(() => {
+    keyToast.classList.remove('show');
+    keyToast.textContent = '\u2713 saved';
+  }, 2000);
+  buildProviderPills();
+  updateKeyStatus();
+  updateBtnState();
 });
 
-// tab switching in ai results
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    currentTab = tab.dataset.tab;
-    if (currentResult) $('output-box').textContent = currentTab === 'final' ? currentResult.final : currentResult.draft;
-  });
+
+// the big button
+mainBtn.addEventListener('click', () => {
+  if (mode === 'offline') runOfflineScan();
+  else runAIRewrite();
 });
 
-$('copy-btn').addEventListener('click', () => {
-  const text = currentTab === 'final' ? currentResult.final : currentResult.draft;
-  navigator.clipboard.writeText(text).then(() => {
-    $('copy-btn').textContent = 'Copied ✓'; $('copy-btn').classList.add('copied');
-    setTimeout(() => { $('copy-btn').textContent = 'Copy text'; $('copy-btn').classList.remove('copied'); }, 1800);
-  });
-});
-
-$('copy-fixed-btn').addEventListener('click', () => {
-  navigator.clipboard.writeText(fixedText).then(() => {
-    $('copy-fixed-btn').textContent = 'Copied ✓'; $('copy-fixed-btn').classList.add('copied');
-    setTimeout(() => { $('copy-fixed-btn').textContent = 'Copy fixed text'; $('copy-fixed-btn').classList.remove('copied'); }, 1800);
-  });
-});
 
 // -----------------------------------------------------------------------
-// OFFLINE SCAN ENGINE
-// walks through all patterns, collects matches, builds highlighted preview
-// and applies auto-fixes where available
+// OFFLINE SCAN — pure regex, no internet needed
 // -----------------------------------------------------------------------
-function runOfflineScan(text) {
-  const caught = []; // { match, index, length, cat, fix }
+function runOfflineScan() {
+  const text = inputEl.value.trim();
+  if (!text) return;
 
-  // collect all matches across all patterns
-  PATTERNS.forEach(({ p, cat, fix }) => {
-    const re = new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g');
+  errorBox.style.display = 'none';
+  aiResultsEl.style.display = 'none';
+
+  // run every pattern against the text
+  const matches = [];
+  for (const pat of PATTERNS) {
     let m;
+    const re = new RegExp(pat.p.source, pat.p.flags);
     while ((m = re.exec(text)) !== null) {
-      caught.push({ match: m[0], index: m.index, length: m[0].length, cat, fix });
+      matches.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        matched: m[0],
+        cat: pat.cat,
+        fix: pat.fix,
+      });
     }
-  });
+  }
 
-  // sort by position so we can build the highlighted string in order
-  caught.sort((a, b) => a.index - b.index);
-
-  // remove overlapping matches (keep first one)
-  const filtered = [];
+  // sort by position and kill overlaps
+  matches.sort((a, b) => a.start - b.start);
+  const deduped = [];
   let lastEnd = -1;
-  for (const c of caught) {
-    if (c.index >= lastEnd) {
-      filtered.push(c);
-      lastEnd = c.index + c.length;
-    }
+  for (const m of matches) {
+    if (m.start >= lastEnd) { deduped.push(m); lastEnd = m.end; }
   }
 
-  // build highlighted HTML
+  // cringe score — more hits per word = more AI-sounding
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  const rawScore = Math.min(100, Math.round((deduped.length / Math.max(wordCount, 1)) * 600));
+  const scoreClass = rawScore < 25 ? 'clean' : rawScore < 55 ? 'mid' : 'cringe';
+  const verdicts = {
+    clean: "pretty clean 2014 minor stuff maybe",
+    mid: "smells like AI 2014 worth fixing",
+    cringe: "chatgpt didn2019t even try to hide it",
+  };
+
+  // update score display
+  const scoreNum = $('score-num');
+  const scoreVerdict = $('score-verdict');
+  const scoreFill = $('score-fill');
+  scoreNum.textContent = rawScore;
+  scoreNum.className = 'score-num ' + scoreClass;
+  scoreVerdict.textContent = verdicts[scoreClass];
+  scoreFill.className = 'score-fill ' + scoreClass;
+  scoreFill.style.width = rawScore + '%';
+
+  // highlight text — red = flagged, gold = auto-fixable
   let html = '';
-  let cursor = 0;
-  for (const c of filtered) {
-    // text before this match
-    html += escHtml(text.slice(cursor, c.index));
-    const cls = c.fix !== null ? 'hl-swap' : 'hl';
-    const title = c.fix !== null ? `auto-fix: "${c.fix || '(remove)'}"` : `flag: ${c.cat}`;
-    html += `<span class="${cls}" title="${title}">${escHtml(c.match)}</span>`;
-    cursor = c.index + c.length;
+  let pos = 0;
+  for (const m of deduped) {
+    html += escapeHtml(text.slice(pos, m.start));
+    const cls = m.fix !== null ? 'hl-swap' : 'hl';
+    const title = m.fix !== null ? (m.cat + ' \u2192 "' + m.fix + '"') : m.cat;
+    html += '<span class="' + cls + '" title="' + escapeHtml(title) + '">' + escapeHtml(m.matched) + '</span>';
+    pos = m.end;
   }
-  html += escHtml(text.slice(cursor));
+  html += escapeHtml(text.slice(pos));
+  $('highlight-box').innerHTML = html;
 
-  // build auto-fixed text -- apply fixes in reverse order so indices stay valid
+  // list what we caught
+  const caughtList = $('caught-list');
+  caughtList.innerHTML = '';
+  for (const m of deduped) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="ctag">\u25B8</span> <span class="cword">"' + escapeHtml(m.matched) + '"</span>'
+      + (m.fix !== null ? ' <span class="carrow">\u2192</span> <span class="cfix">"' + escapeHtml(m.fix) + '"</span>' : '')
+      + ' <span class="ccat">' + escapeHtml(m.cat) + '</span>';
+    caughtList.appendChild(li);
+  }
+  if (deduped.length === 0) {
+    caughtList.innerHTML = '<li style="color:var(--text-dim);font-style:italic;">nothing caught 2014 already sounds human</li>';
+  }
+
+  // auto-fix the easy stuff (work backwards so positions don't shift)
   let fixed = text;
-  const toFix = filtered.filter(c => c.fix !== null).reverse();
-  for (const c of toFix) {
-    // preserve capitalisation for single-word fixes
-    let replacement = c.fix;
-    if (replacement && c.match[0] === c.match[0].toUpperCase() && c.match[0] !== c.match[0].toLowerCase()) {
-      replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+  for (let i = deduped.length - 1; i >= 0; i--) {
+    const m = deduped[i];
+    if (m.fix !== null) {
+      let replacement = m.fix;
+      // try to keep capitalization from the original
+      if (m.matched[0] === m.matched[0].toUpperCase() && replacement.length > 0) {
+        replacement = replacement[0].toUpperCase() + replacement.slice(1);
+      }
+      fixed = fixed.slice(0, m.start) + replacement + fixed.slice(m.end);
     }
-    fixed = fixed.slice(0, c.index) + replacement + fixed.slice(c.index + c.length);
   }
-  // clean up double spaces from empty-string removals
-  fixed = fixed.replace(/  +/g, ' ').replace(/\n +\n/g, '\n\n').trim();
+  $('fixed-box').textContent = fixed;
 
-  return { caught: filtered, html, fixed };
+  // HERE'S THE FIX — display:block not empty string!
+  scanResultsEl.style.display = 'block';
+
+  sdot.className = 'sdot done';
+  stext.textContent = 'Done \u2014 ' + deduped.length + ' pattern' + (deduped.length !== 1 ? 's' : '') + ' found';
+  statusBar.className = 'status-bar done';
 }
 
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function getVerdict(count) {
-  if (count === 0) return { label: 'clean', verdict: 'Looks good. No obvious AI patterns found.', pct: 2 };
-  if (count <= 2) return { label: 'mid', verdict: 'A couple things to fix. Not bad.', pct: 20 };
-  if (count <= 5) return { label: 'mid', verdict: 'Definitely AI-flavoured. Worth cleaning up.', pct: 50 };
-  if (count <= 10) return { label: 'cringe', verdict: 'Heavy AI vibes. Needs work.', pct: 75 };
-  return { label: 'cringe', verdict: 'Maximum cringe. ChatGPT wrote this and didn\'t even try to hide it.', pct: 100 };
-}
 
 // -----------------------------------------------------------------------
-// API CALLERS
+// SYSTEM PROMPT — same instructions for every provider
 // -----------------------------------------------------------------------
-async function callAnthropic(key, input) {
-  const headers = { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
-  if (key) headers['x-api-key'] = key;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST', headers,
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: 'Humanize:\n\n' + input }] }),
-  });
-  const d = await res.json();
-  if (d.error) throw new Error(d.error.message);
-  return d.content.map(b => b.text || '').join('');
-}
+const SYSTEM_PROMPT = `You are an expert editor who makes AI-generated text sound naturally human. Your job:
+1. Remove AI tells: em dashes, "it's worth noting", "vibrant", "tapestry", "nestled", "serves as a testament", hedging phrases, forced enthusiasm, corporate buzzwords, formulaic structures.
+2. Add natural human imperfections: contractions, sentence fragments where natural, varied sentence lengths, casual transitions, specific details over vague claims.
+3. Keep the core meaning and information intact.
+4. Match the appropriate register (formal/casual based on content).
 
-// gemini puts the key in the url query param (their design choice)
-async function callGemini(key, input) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\nHumanize:\n\n' + input }] }] }),
-  });
-  const d = await res.json();
-  if (d.error) throw new Error(d.error.message);
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
+Respond ONLY with valid JSON in this exact format:
+{
+  "final": "the fully rewritten text",
+  "draft": "the original text with minimal changes",
+  "tells": ["list of AI tells you found in the original"],
+  "changes": ["list of specific changes you made and why"]
+}`;
 
-// groq is openai-compatible, just different base url + model
-async function callGroq(key, input) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', max_tokens: 1000, messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: 'Humanize:\n\n' + input }] }),
-  });
-  const d = await res.json();
-  if (d.error) throw new Error(typeof d.error === 'string' ? d.error : d.error.message);
-  return d.choices?.[0]?.message?.content || '';
-}
 
 // -----------------------------------------------------------------------
-// MAIN BUTTON HANDLER -- routes to offline or ai depending on mode
+// AI REWRITE — one function, config does the heavy lifting
 // -----------------------------------------------------------------------
-mainBtn.addEventListener('click', async () => {
-  const input = inputEl.value.trim();
-  if (!input) return;
+async function runAIRewrite() {
+  const text = inputEl.value.trim();
+  if (!text || !apiKeys[provider]) return;
 
+  const cfg = PROVIDERS[provider];
+  if (!cfg) return;
+
+  // reset ui
   errorBox.style.display = 'none';
   scanResultsEl.style.display = 'none';
   aiResultsEl.style.display = 'none';
+  mainBtn.disabled = true;
+  mainBtn.innerHTML = '<span class="spinner"></span>making it human...';
 
-  if (currentMode === 'offline') {
-    // --- OFFLINE SCAN ---
-    setStatus('offline', 'Scanning...', 'rule-based');
-    mainBtn.disabled = true;
+  sdot.className = 'sdot calling';
+  stext.textContent = 'asking ' + cfg.label + '...';
+  sprovider.textContent = cfg.label.toLowerCase() + ' / ' + cfg.model;
+  statusBar.className = 'status-bar calling';
 
-    // small timeout so the status updates visibly before blocking
-    setTimeout(() => {
-      const { caught, html, fixed } = runOfflineScan(input);
-      fixedText = fixed;
+  try {
+    const { url, options } = cfg.buildRequest(text, SYSTEM_PROMPT, apiKeys[provider]);
+    const res = await fetch(url, options);
 
-      const { label, verdict, pct } = getVerdict(caught.length);
-
-      // score
-      $('score-num').textContent = caught.length;
-      $('score-num').className = 'score-num ' + label;
-      $('score-verdict').textContent = verdict;
-      $('score-fill').style.width = pct + '%';
-      $('score-fill').className = 'score-fill ' + label;
-
-      // highlighted text
-      $('highlight-box').innerHTML = html || '<span style="color:var(--text-darkest)">nothing flagged</span>';
-
-      // caught list
-      const caughtList = $('caught-list');
-      caughtList.innerHTML = '';
-      if (caught.length === 0) {
-        caughtList.innerHTML = '<li style="color:var(--text-darkest);font-family:\'JetBrains Mono\',monospace;font-size:12px;">no patterns matched</li>';
-      } else {
-        caught.forEach(c => {
-          const li = document.createElement('li');
-          const fixLabel = c.fix === null ? '' : c.fix === '' ? ' <span class="carrow">→</span> <span class="cfix">(remove)</span>' : ` <span class="carrow">→</span> <span class="cfix">"${c.fix}"</span>`;
-          li.innerHTML = `<span class="ctag">✗</span><span class="cword">"${escHtml(c.match)}"</span>${fixLabel}<span class="ccat">${c.cat}</span>`;
-          caughtList.appendChild(li);
-        });
-      }
-
-      // fixed text
-      $('fixed-box').textContent = fixed;
-
-      scanResultsEl.style.display = 'block';
-      setStatus('offline', `Found ${caught.length} pattern${caught.length !== 1 ? 's' : ''}`, 'rule-based');
-      mainBtn.disabled = false;
-    }, 80);
-
-  } else {
-    // --- AI REWRITE ---
-    const key = savedKeys[currentProvider] || apiKeyInput.value.trim();
-    if (!key && currentProvider !== 'anthropic') {
-      errorBox.textContent = `No ${currentProvider} API key. Paste it above and hit Save.`;
-      errorBox.style.display = 'block';
-      return;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.error?.message || err.message || err.error || (cfg.label + ' returned ' + res.status);
+      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     }
 
-    mainBtn.disabled = true;
-    mainBtn.innerHTML = '<span class="spinner"></span>Humanizing...';
-    setStatus('calling', 'Calling ' + currentProvider + ' API...', PROVIDERS[currentProvider].label);
+    const data = await res.json();
+    const rawText = cfg.extractText(data);
+    aiResultsData = parseAIResponse(rawText);
+    renderAIResults();
 
-    try {
-      let rawText = '';
-      if (currentProvider === 'anthropic') rawText = await callAnthropic(key, input);
-      else if (currentProvider === 'gemini') rawText = await callGemini(key, input);
-      else rawText = await callGroq(key, input);
-
-      setStatus('calling', 'Parsing response...', PROVIDERS[currentProvider].label);
-
-      // strip any backtick fences the model snuck in anyway
-      const clean = rawText.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
-      currentResult = parsed; currentTab = 'final';
-
-      // render tells
-      const tellsList = $('tells-list');
-      tellsList.innerHTML = '';
-      (parsed.aiTells || []).forEach(tell => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span class="tdot">·</span>${tell}`;
-        tellsList.appendChild(li);
-      });
-
-      // show final by default
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelector('[data-tab="final"]').classList.add('active');
-      $('output-box').textContent = parsed.final;
-
-      // render changes
-      const changesList = $('changes-list');
-      changesList.innerHTML = '';
-      (parsed.changes || []).forEach((change, i) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span class="num">${String(i+1).padStart(2,'0')}</span>${change}`;
-        changesList.appendChild(li);
-      });
-
-      aiResultsEl.style.display = 'block';
-      setStatus('done', 'Done — humanized successfully', PROVIDERS[currentProvider].label);
-
-    } catch (e) {
-      errorBox.textContent = 'Error: ' + (e.message || 'Something went wrong. Check your API key.');
-      errorBox.style.display = 'block';
-      setStatus('error', 'API call failed', PROVIDERS[currentProvider].label);
-    } finally {
-      mainBtn.disabled = false;
-      mainBtn.textContent = 'Humanize →';
-      inputEl.dispatchEvent(new Event('input'));
-    }
+    sdot.className = 'sdot done';
+    stext.textContent = 'done 2014 that2019s more human';
+    statusBar.className = 'status-bar done';
+  } catch (err) {
+    sdot.className = 'sdot error';
+    stext.textContent = 'something broke 2014 bad key maybe?';
+    statusBar.className = 'status-bar error';
+    errorBox.textContent = err.message || 'Unknown error';
+    errorBox.style.display = 'block';
+  } finally {
+    mainBtn.disabled = false;
+    mainBtn.textContent = 'Humanize \u2192';
+    updateBtnState();
   }
+}
+
+
+// parse the AI response — sometimes it's clean JSON, sometimes wrapped in markdown
+function parseAIResponse(raw) {
+  let jsonStr = raw;
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) jsonStr = jsonMatch[0];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return {
+      final: parsed.final || raw,
+      draft: parsed.draft || raw,
+      tells: Array.isArray(parsed.tells) ? parsed.tells : [],
+      changes: Array.isArray(parsed.changes) ? parsed.changes : [],
+    };
+  } catch {
+    // couldn't parse it, just show the raw text
+    return { final: raw, draft: raw, tells: [], changes: ["Couldn't parse structured response \u2014 showing raw output"] };
+  }
+}
+
+
+// render ai results — THIS IS THE KEY FIX: display = 'block' not ''
+function renderAIResults() {
+  // tells list
+  const tellsList = $('tells-list');
+  tellsList.innerHTML = '';
+  for (const t of aiResultsData.tells) {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="tdot">\u203A</span> ' + escapeHtml(t);
+    tellsList.appendChild(li);
+  }
+  if (aiResultsData.tells.length === 0) {
+    tellsList.innerHTML = '<li style="color:var(--text-dim);font-style:italic;">No AI tells spotted</li>';
+  }
+
+  // output text
+  currentTab = 'final';
+  $('output-box').textContent = aiResultsData.final;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'final'));
+
+  // changes list
+  const changesList = $('changes-list');
+  changesList.innerHTML = '';
+  aiResultsData.changes.forEach((c, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="num">' + String(i + 1).padStart(2, '0') + '</span> ' + escapeHtml(c);
+    changesList.appendChild(li);
+  });
+
+  // HERE — display:block, not empty string
+  aiResultsEl.style.display = 'block';
+}
+
+
+// tabs: final vs draft
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentTab = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab));
+    $('output-box').textContent = currentTab === 'final' ? aiResultsData.final : aiResultsData.draft;
+  });
 });
 
-// start in offline mode
-selectProvider('anthropic');
+
+// copy buttons — the boring but necessary part
+$('copy-btn').addEventListener('click', function() {
+  navigator.clipboard.writeText($('output-box').textContent).then(() => {
+    this.textContent = 'Copied \u2713';
+    this.classList.add('copied');
+    setTimeout(() => { this.textContent = 'Copy text'; this.classList.remove('copied'); }, 2000);
+  });
+});
+
+$('copy-fixed-btn').addEventListener('click', function() {
+  navigator.clipboard.writeText($('fixed-box').textContent).then(() => {
+    this.textContent = 'Copied \u2713';
+    this.classList.add('copied');
+    setTimeout(() => { this.textContent = 'Copy fixed text'; this.classList.remove('copied'); }, 2000);
+  });
+});
+
+
+// kick things off
+updateBtnState();
 </script>
 </body>
 </html>
