@@ -13,6 +13,51 @@
     --text-dim: #6a6258; --text-darker: #4a4540; --text-darkest: #3a3530;
     --red: #c43a3a; --green: #4a9a4a;
   }
+  [data-theme="light"] {
+    --bg: #f8f6f0; --surface: #ffffff; --surface2: #f2ede4;
+    --border: #dfd8cb; --border2: #e8e2d6; --gold: #a67420;
+    --text: #1c1917; --text-body: #2c2724; --text-muted: #6b6357;
+    --text-dim: #8c8273; --text-darker: #736b5e; --text-darkest: #a89e90;
+    --red: #b82d2d; --green: #2e7d32;
+  }
+  [data-theme="light"] h1 { color: #1a1614; }
+  [data-theme="light"] body::before { opacity: 0.2; }
+  [data-theme="light"] .mode-btn:hover { background: #00000008; }
+  [data-theme="light"] .pill.active { background: #a6742012; }
+  [data-theme="light"] button.primary:disabled { background: #e5dfd5; color: #a89e90; }
+  [data-theme="light"] .error-box { background: #fdf2f0; border-color: #f5c2b8; color: #b82d2d; }
+  [data-theme="light"] .highlight-box .hl { background: #b82d2d14; color: #b82d2d; }
+  [data-theme="light"] .highlight-box .hl-swap { background: #a6742018; color: #8c5e12; }
+  [data-theme="light"] .caught-list li .cword { color: #b82d2d; }
+  [data-theme="light"] .key-status { background: var(--surface2); }
+  [data-theme="light"] .tab.active { border-bottom-color: var(--gold); color: var(--gold); }
+
+  .theme-toggle {
+    position: absolute;
+    top: 24px;
+    right: 28px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+  .theme-toggle:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    transform: scale(1.08);
+  }
+  @media (max-width: 600px) {
+    .theme-toggle { top: 16px; right: 16px; width: 32px; height: 32px; font-size: 13px; }
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: 'Playfair Display', Georgia, serif; min-height: 100vh; position: relative; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 
@@ -225,10 +270,24 @@
     textarea { min-height: 100px; }
   }
 </style>
+<script>
+  (function() {
+    const saved = localStorage.getItem('humanizer_theme');
+    if (saved) {
+      document.documentElement.setAttribute('data-theme', saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 </head>
 <body>
 <div class="gold-line"></div>
 <div class="container">
+
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
+    <span id="theme-icon">☀️</span>
+  </button>
 
   <header>
     <h1>Humanizer</h1>
@@ -1152,6 +1211,27 @@ $('copy-fixed-btn').addEventListener('click', function() {
   });
 });
 
+
+// theme switcher
+const themeToggleBtn = $('theme-toggle');
+const themeIcon = $('theme-icon');
+
+function updateThemeIcon() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  themeIcon.textContent = current === 'light' ? '🌙' : '☀️';
+  themeToggleBtn.setAttribute('title', current === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('humanizer_theme', next);
+    updateThemeIcon();
+  });
+  updateThemeIcon();
+}
 
 // kick things off
 updateBtnState();
